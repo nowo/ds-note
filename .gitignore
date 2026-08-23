@@ -1,0 +1,61 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+example
+
+# generated native folders
+/ios
+/android
+
+# 本地导出/构建产物
+dist-test/
+
+# 个人 npm 镜像配置（如团队统一使用可删除下面这行并提交）
+.npmrc
+
+# 本地缓存/临时目录
+.npm-cache/
+.tmp/
+
+# 日志
+*.log
+
+# Windows
+Thumbs.db
+Desktop.ini
+ehthumbs.db

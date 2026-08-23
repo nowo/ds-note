@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import {
+    Alert,
     Modal,
     Pressable,
     StyleSheet,
@@ -78,6 +79,31 @@ const styles = StyleSheet.create({
     switchDisabled: {
         color: '#aaa',
     },
+    removeSection: {
+        marginTop: 8,
+        paddingTop: 12,
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: '#e3e3e3',
+        gap: 8,
+    },
+    removeHint: {
+        fontSize: 12,
+        color: '#888',
+        lineHeight: 17,
+    },
+    removeButton: {
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#e0a3a3',
+        backgroundColor: '#fdf0f0',
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    removeButtonText: {
+        color: '#c0392b',
+        fontSize: 15,
+        fontWeight: '600',
+    },
     closeButton: {
         marginTop: 8,
         alignItems: 'center',
@@ -97,11 +123,14 @@ export function VaultSettings({ visible, onClose }: { visible: boolean, onClose:
     const [busy, setBusy] = useState(false)
     const [done, setDone] = useState(false)
     const [actionError, setActionError] = useState<string | null>(null)
+    const [removeBusy, setRemoveBusy] = useState(false)
+    const [removeDone, setRemoveDone] = useState(false)
 
     const close = () => {
         setNewPassword('')
         setNewConfirm('')
         setDone(false)
+        setRemoveDone(false)
         setActionError(null)
         onClose()
     }
@@ -127,6 +156,32 @@ export function VaultSettings({ visible, onClose }: { visible: boolean, onClose:
         } catch (e) {
             setActionError(`操作失败：${String(e instanceof Error ? e.message : e)}`)
         }
+    }
+
+    const handleRemovePassword = () => {
+        Alert.alert(
+            '删除自定义密码',
+            '删除后加密区将仅使用设备锁（指纹/面容/锁屏密码）解锁。确定删除吗？',
+            [
+                { text: '取消', style: 'cancel' },
+                {
+                    text: '删除',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setRemoveBusy(true)
+                        setActionError(null)
+                        try {
+                            await vault.removePassword()
+                            setRemoveDone(true)
+                        } catch (e) {
+                            setActionError(`删除失败：${String(e instanceof Error ? e.message : e)}`)
+                        } finally {
+                            setRemoveBusy(false)
+                        }
+                    },
+                },
+            ],
+        )
     }
 
     const recoveryOn = vault.mode === 'both' || vault.mode === 'device'
@@ -178,6 +233,28 @@ export function VaultSettings({ visible, onClose }: { visible: boolean, onClose:
                                 允许用锁屏密码找回（忘记密码时可用设备验证重置）
                                 {vault.mode === 'device' ? '（设备锁模式下固定开启）' : ''}
                             </Text>
+                        </View>
+                    )}
+
+                    {vault.mode !== 'device' && (
+                        <View style={styles.removeSection}>
+                            <Text style={styles.label}>删除自定义密码</Text>
+                            <Text style={styles.removeHint}>
+                                删除后加密区将仅使用设备锁（指纹/面容/锁屏密码）解锁。
+                                {!vault.canUseDevice ? ' 当前手机未设置锁屏密码，无法删除。' : ''}
+                            </Text>
+                            <Pressable
+                                style={[styles.removeButton, (!vault.canUseDevice || removeBusy) && styles.disabled]}
+                                disabled={!vault.canUseDevice || removeBusy}
+                                onPress={handleRemovePassword}
+                            >
+                                <Text style={styles.removeButtonText}>
+                                    {removeBusy ? '验证并删除中…' : '删除自定义密码'}
+                                </Text>
+                            </Pressable>
+                            {removeDone && (
+                                <Text style={styles.done}>✅ 已删除，加密区现使用设备锁解锁</Text>
+                            )}
                         </View>
                     )}
 

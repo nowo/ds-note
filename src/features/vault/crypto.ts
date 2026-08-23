@@ -9,15 +9,18 @@
  */
 import { gcm } from '@noble/ciphers/aes.js'
 import { bytesToUtf8, utf8ToBytes } from '@noble/ciphers/utils.js'
-import { pbkdf2 } from '@noble/hashes/pbkdf2.js'
+import { pbkdf2Async } from '@noble/hashes/pbkdf2.js'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { getRandomBytes } from 'expo-crypto'
 
 export const KEY_LEN = 32 // 256-bit
 export const NONCE_LEN = 12 // GCM 96-bit 推荐长度
 export const TAG_LEN = 16
-/** PBKDF2 迭代次数（纯 JS 实现下兼顾速度与安全，可随 kdf_iters 存库调整） */
-export const DEFAULT_PBKDF2_ITERS = 200_000
+/**
+ * PBKDF2 迭代次数：纯 JS 实现（Hermes 比 V8 慢 5-20 倍），
+ * 100k 兼顾手机端响应速度；后续换 react-native-quick-crypto（原生 KDF）后可再提高。
+ */
+export const DEFAULT_PBKDF2_ITERS = 100_000
 
 // ---------- base64（不依赖全局 btoa/atob，兼容 Hermes） ----------
 
@@ -96,7 +99,20 @@ export function generateSalt(): Uint8Array {
     return getRandomBytes(16)
 }
 
-/** 自定义密码 → KEK（PBKDF2-SHA256） */
-export function derivePasswordKey(password: string, salt: Uint8Array, iterations: number): Uint8Array {
-    return pbkdf2(sha256, utf8ToBytes(password), salt, { c: iterations, dkLen: KEY_LEN })
+/**
+ * 自定义密码 → KEK（PBKDF2-SHA256，异步版：每 asyncTick 毫秒让出事件循环，
+ * 避免手机端纯 JS 派生卡死 UI；派生期间界面应显示"处理中…"）
+ */
+export async function derivePasswordKey(
+    password: string,
+    salt: Uint8Array,
+    iterations: number,
+): Promise<Uint8Array> {
+    // 先让出事件循环，确保调用方的"处理中…"状态先绘制出来，再开始计算
+    await new Promise(resolve => setTimeout(resolve, 0))
+    return pbkdf2Async(sha256, utf8ToBytes(password), salt, {
+        c: iterations,
+        dkLen: KEY_LEN,
+        asyncTick: 10,
+    })
 }

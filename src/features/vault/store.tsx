@@ -44,6 +44,7 @@ interface VaultContextValue {
     unlockWithPassword: (password: string) => Promise<boolean>
     lock: () => void
     changePassword: (newPassword: string) => Promise<void>
+    removePassword: () => Promise<void>
     resetForgottenPassword: (newPassword: string) => Promise<boolean>
     setDeviceRecovery: (enabled: boolean) => Promise<void>
     clearError: () => void
@@ -115,7 +116,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
             const newMk = generateMasterKey()
             const salt = generateSalt()
             const iters = DEFAULT_PBKDF2_ITERS
-            const kek = derivePasswordKey(password, salt, iters)
+            const kek = await derivePasswordKey(password, salt, iters)
             await setMeta(db, 'kdf_salt', toBase64(salt))
             await setMeta(db, 'kdf_iters', String(iters))
             await setMeta(db, 'wrapped_mk_password', wrapKey(kek, newMk))
@@ -178,7 +179,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
                     return fail('未设置自定义密码')
                 }
                 const iters = Number((await getMeta(db, 'kdf_iters')) ?? DEFAULT_PBKDF2_ITERS)
-                const kek = derivePasswordKey(password, fromBase64(saltB64), iters)
+                const kek = await derivePasswordKey(password, fromBase64(saltB64), iters)
                 try {
                     const newMk = unwrapKey(kek, wrapped)
                     setMk(newMk)
@@ -199,13 +200,37 @@ export function VaultProvider({ children }: { children: ReactNode }) {
             if (!mk) throw new Error('加密区未解锁')
             const salt = generateSalt()
             const iters = DEFAULT_PBKDF2_ITERS
-            const kek = derivePasswordKey(newPassword, salt, iters)
+            const kek = await derivePasswordKey(newPassword, salt, iters)
             await setMeta(db, 'kdf_salt', toBase64(salt))
             await setMeta(db, 'kdf_iters', String(iters))
             await setMeta(db, 'wrapped_mk_password', wrapKey(kek, mk))
+            // 设备锁模式设置密码后，模式升级为 both（密码 + 设备均可解锁）
+            if (mode === 'device') {
+                await setMeta(db, 'mode', 'both')
+                setMode('both')
+            }
         },
-        [db, mk],
+        [db, mk, mode],
     )
+
+    /**
+     * 删除自定义密码：删除后仅用设备锁（指纹/面容/锁屏密码）解锁。
+     * 前置条件：手机已设置锁屏（canUseDevice），且通过系统验证确认身份；
+     * 删除时会确保设备包装存在（无则创建），避免留下无法解锁的状态。
+     */
+    const removePassword = useCallback(async () => {
+        if (!mk) throw new Error('加密区未解锁')
+        if (mode === 'device') return // 本来就没有密码
+        const authed = await authenticateDevice('确认身份以删除自定义密码')
+        if (!authed) throw new Error('验证未通过')
+        const deviceKek = await getOrCreateDeviceKek()
+        await setMeta(db, 'wrapped_mk_device', wrapKey(deviceKek, mk))
+        await deleteMeta(db, 'wrapped_mk_password')
+        await deleteMeta(db, 'kdf_salt')
+        await deleteMeta(db, 'kdf_iters')
+        await setMeta(db, 'mode', 'device')
+        setMode('device')
+    }, [db, mk, mode])
 
     const resetForgottenPassword = useCallback(
         async (newPassword: string) => {
@@ -225,7 +250,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
                 const newMk = unwrapKey(kek, wrappedDev)
                 const salt = generateSalt()
                 const iters = DEFAULT_PBKDF2_ITERS
-                const pwKek = derivePasswordKey(newPassword, salt, iters)
+                const pwKek = await derivePasswordKey(newPassword, salt, iters)
                 await setMeta(db, 'kdf_salt', toBase64(salt))
                 await setMeta(db, 'kdf_iters', String(iters))
                 await setMeta(db, 'wrapped_mk_password', wrapKey(pwKek, newMk))
@@ -278,6 +303,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
             unlockWithPassword,
             lock,
             changePassword,
+            removePassword,
             resetForgottenPassword,
             setDeviceRecovery,
             clearError,
@@ -295,6 +321,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
             unlockWithPassword,
             lock,
             changePassword,
+            removePassword,
             resetForgottenPassword,
             setDeviceRecovery,
             clearError,

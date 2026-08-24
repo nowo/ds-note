@@ -294,45 +294,45 @@ export default function NotesListScreen() {
             <View style={styles.listArea}>
                 {isLoading
                     ? (
-                        <View style={styles.center}>
-                            <ActivityIndicator size="large" />
-                        </View>
-                    )
-                    : isError
-                        ? (
                             <View style={styles.center}>
-                                <Text style={styles.hint}>加载失败，请重试</Text>
+                                <ActivityIndicator size="large" />
                             </View>
                         )
+                    : isError
+                        ? (
+                                <View style={styles.center}>
+                                    <Text style={styles.hint}>加载失败，请重试</Text>
+                                </View>
+                            )
                         : (
-                            <FlatList
-                                data={notes}
-                                keyExtractor={item => item.id}
-                                renderItem={({ item }) => (
-                                    <NoteCard note={item} onPress={() => router.push(`/note/${item.id}`)} />
-                                )}
-                                contentContainerStyle={(notes?.length ?? 0) === 0 ? styles.emptyContainer : styles.listContent}
-                                onScroll={handleScroll}
-                                scrollEventThrottle={16}
-                                ListEmptyComponent={(
-                                    <View style={styles.center}>
-                                        {searching
-                                            ? (
-                                                <>
-                                                    <Text style={styles.emptyTitle}>无匹配结果</Text>
-                                                    <Text style={styles.hint}>换个关键词试试</Text>
-                                                </>
-                                            )
-                                            : (
-                                                <>
-                                                    <Text style={styles.emptyTitle}>还没有笔记</Text>
-                                                    <Text style={styles.hint}>点击右上角「＋ 新建」开始记录</Text>
-                                                </>
-                                            )}
-                                    </View>
-                                )}
-                            />
-                        )}
+                                <FlatList
+                                    data={notes}
+                                    keyExtractor={item => item.id}
+                                    renderItem={({ item }) => (
+                                        <NoteCard note={item} onPress={() => router.push(`/note/${item.id}`)} />
+                                    )}
+                                    contentContainerStyle={(notes?.length ?? 0) === 0 ? styles.emptyContainer : styles.listContent}
+                                    onScroll={handleScroll}
+                                    scrollEventThrottle={16}
+                                    ListEmptyComponent={(
+                                        <View style={styles.center}>
+                                            {searching
+                                                ? (
+                                                        <>
+                                                            <Text style={styles.emptyTitle}>无匹配结果</Text>
+                                                            <Text style={styles.hint}>换个关键词试试</Text>
+                                                        </>
+                                                    )
+                                                : (
+                                                        <>
+                                                            <Text style={styles.emptyTitle}>还没有笔记</Text>
+                                                            <Text style={styles.hint}>点击右上角「＋ 新建」开始记录</Text>
+                                                        </>
+                                                    )}
+                                        </View>
+                                    )}
+                                />
+                            )}
             </View>
         </SafeAreaView>
     )

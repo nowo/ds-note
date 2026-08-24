@@ -2,12 +2,14 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { NormalNotesPicker } from '@/features/vault/components/normal-notes-picker'
 import { SetupFlow } from '@/features/vault/components/setup-flow'
 import { UnlockScreen } from '@/features/vault/components/unlock-screen'
 import { VaultNoteCard } from '@/features/vault/components/vault-note-card'
 import { VaultSettings } from '@/features/vault/components/vault-settings'
 import { useVaultNotes } from '@/features/vault/hooks'
 import { useVault } from '@/features/vault/store'
+import { goBackOr } from '@/utils/navigation'
 
 const styles = StyleSheet.create({
     safe: {
@@ -113,24 +115,30 @@ function VaultList({ onOpenSettings }: { onOpenSettings: () => void }) {
     const router = useRouter()
     const vault = useVault()
     const { data: notes, isLoading, isError } = useVaultNotes()
+    const [importVisible, setImportVisible] = useState(false)
     const handleCreate = () => {
     // 惰性新建：进入编辑页，首次输入内容保存时才加密落库
         router.push('/vault-note/new')
     }
 
     const handleLock = () => {
+        // 先回首页再锁定：避免 vault 页面以 locked 态重渲染出解锁页时
+        // 自动唤起系统验证（与回首页同时弹出验证窗口的体验问题）
+        goBackOr('/')
         vault.lock()
-        router.back()
     }
 
     return (
         <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={styles.header}>
-                <Pressable onPress={() => router.back()} hitSlop={8} style={styles.iconButton}>
+                <Pressable onPress={() => goBackOr('/')} hitSlop={8} style={styles.iconButton}>
                     <Text style={styles.iconText}>←</Text>
                 </Pressable>
                 <Text style={styles.headerTitle}>🔒 加密笔记</Text>
                 <View style={styles.headerActions}>
+                    <Pressable onPress={() => setImportVisible(true)} hitSlop={8} style={styles.iconButton}>
+                        <Text style={styles.iconText}>📥</Text>
+                    </Pressable>
                     <Pressable onPress={handleLock} hitSlop={8} style={styles.iconButton}>
                         <Text style={styles.iconText}>🔓</Text>
                     </Pressable>
@@ -139,6 +147,11 @@ function VaultList({ onOpenSettings }: { onOpenSettings: () => void }) {
                     </Pressable>
                 </View>
             </View>
+
+            <NormalNotesPicker
+                visible={importVisible}
+                onClose={() => setImportVisible(false)}
+            />
 
             {isLoading
                 ? (

@@ -17,10 +17,12 @@ import { exportTextFile } from '@/features/transfer/transfer'
 import {
     useCreateVaultNote,
     useDeleteVaultNote,
+    useMoveVaultNoteToNormal,
     useUpdateVaultNote,
     useVaultNote,
 } from '@/features/vault/hooks'
 import { useVault } from '@/features/vault/store'
+import { goBackOr } from '@/utils/navigation'
 import { formatDateTime } from '@/utils/time'
 
 const styles = StyleSheet.create({
@@ -122,6 +124,7 @@ export default function VaultNoteEditorScreen() {
     const create = useCreateVaultNote()
     const update = useUpdateVaultNote()
     const remove = useDeleteVaultNote()
+    const moveOut = useMoveVaultNoteToNormal()
 
     const [title, setTitle] = useState('')
     const [content, setContent] = useState('')
@@ -186,7 +189,7 @@ export default function VaultNoteEditorScreen() {
     const handleDelete = () => {
     // 新建且尚未落库：直接返回，不产生任何数据
         if (isNew && !createdIdRef.current) {
-            router.back()
+            goBackOr('/vault')
             return
         }
         Alert.alert('删除加密笔记', '确定删除吗？', [
@@ -196,7 +199,7 @@ export default function VaultNoteEditorScreen() {
                 style: 'destructive',
                 onPress: () => {
                     remove.mutate(id, {
-                        onSuccess: () => router.back(),
+                        onSuccess: () => goBackOr('/vault'),
                     })
                 },
             },
@@ -210,6 +213,21 @@ export default function VaultNoteEditorScreen() {
         } catch (e) {
             Alert.alert('导出失败', String(e instanceof Error ? e.message : e))
         }
+    }
+
+    const handleMoveOut = () => {
+        if (isNew) return
+        Alert.alert('移出加密区', '将把该笔记还原为普通笔记（明文存储，不再加密）。确定吗？', [
+            { text: '取消', style: 'cancel' },
+            {
+                text: '移出',
+                onPress: () => {
+                    moveOut.mutate(id, latestRef.current, {
+                        onSuccess: () => goBackOr('/vault'),
+                    })
+                },
+            },
+        ])
     }
 
     const handleExport = () => {
@@ -244,7 +262,7 @@ export default function VaultNoteEditorScreen() {
         return (
             <View style={styles.center}>
                 <Text style={styles.missing}>笔记不存在或已被删除</Text>
-                <Pressable onPress={() => router.back()} style={styles.backButton}>
+                <Pressable onPress={() => goBackOr('/vault')} style={styles.backButton}>
                     <Text style={styles.backButtonText}>返回</Text>
                 </Pressable>
             </View>
@@ -258,7 +276,7 @@ export default function VaultNoteEditorScreen() {
         <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
             <View style={styles.toolbar}>
                 <View style={styles.toolbarLeft}>
-                    <Pressable onPress={() => router.back()} hitSlop={8} style={styles.toolbarButton}>
+                    <Pressable onPress={() => goBackOr('/vault')} hitSlop={8} style={styles.toolbarButton}>
                         <Text style={styles.toolbarText}>←</Text>
                     </Pressable>
                     <Text style={styles.saveStatus}>{saveLabel}</Text>
@@ -267,6 +285,11 @@ export default function VaultNoteEditorScreen() {
                     <Pressable onPress={handleExport} hitSlop={8} style={styles.toolbarButton}>
                         <Text style={styles.toolbarText}>📤</Text>
                     </Pressable>
+                    {!isNew && (
+                        <Pressable onPress={handleMoveOut} hitSlop={8} style={styles.toolbarButton}>
+                            <Text style={styles.toolbarText}>↩</Text>
+                        </Pressable>
+                    )}
                     <Pressable onPress={handleDelete} hitSlop={8} style={styles.toolbarButton}>
                         <Text style={styles.deleteText}>🗑</Text>
                     </Pressable>

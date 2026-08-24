@@ -1,6 +1,6 @@
 import type { NewVaultNote } from '@/db/schema'
 import { useCallback, useMemo } from 'react'
-import { notifyVaultNotesChanged, useLoad, useVaultNotesVersion } from '@/data-layer'
+import { notifyNotesChanged, notifyVaultNotesChanged, useLoad, useVaultNotesVersion } from '@/data-layer'
 import { useDbContext } from '@/db/db-provider'
 import { useDb } from '@/features/notes/hooks'
 import {
@@ -12,6 +12,7 @@ import {
 } from './api'
 import { decryptText, encryptText } from './crypto'
 import { useVault } from './store'
+import { moveNoteToVault, moveVaultNoteToNormal } from './transfer'
 
 interface DecryptedVaultNote {
     id: string
@@ -102,5 +103,38 @@ export function useDeleteVaultNote() {
             opts?.onSuccess?.()
         })
     }, [db])
+    return useMemo(() => ({ mutate, mutateAsync: mutate }), [mutate])
+}
+
+/** 普通笔记 → 加密区（需已解锁） */
+export function useMoveNoteToVault() {
+    const db = useDbContext()
+    const { mk } = useVault()
+    const mutate = useCallback((noteId: string, opts?: { onSuccess?: () => void }) => {
+        if (!mk) return Promise.reject(new Error('加密区未解锁'))
+        return moveNoteToVault(db, mk, noteId).then(() => {
+            notifyNotesChanged()
+            notifyVaultNotesChanged()
+            opts?.onSuccess?.()
+        })
+    }, [db, mk])
+    return useMemo(() => ({ mutate, mutateAsync: mutate }), [mutate])
+}
+
+/** 加密笔记 → 普通笔记（可传编辑器最新明文，避免丢失未落盘修改） */
+export function useMoveVaultNoteToNormal() {
+    const db = useDbContext()
+    const { mk } = useVault()
+    const mutate = useCallback(
+        (vaultNoteId: string, plaintext?: { title: string, content: string }, opts?: { onSuccess?: () => void }) => {
+            if (!mk) return Promise.reject(new Error('加密区未解锁'))
+            return moveVaultNoteToNormal(db, mk, vaultNoteId, plaintext).then(() => {
+                notifyNotesChanged()
+                notifyVaultNotesChanged()
+                opts?.onSuccess?.()
+            })
+        },
+        [db, mk],
+    )
     return useMemo(() => ({ mutate, mutateAsync: mutate }), [mutate])
 }

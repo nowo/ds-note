@@ -12,6 +12,7 @@ import {
     View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { notifyNotesChanged } from '@/data-layer'
 import { NoteCard } from '@/features/notes/components/note-card'
 import { useCreateNote, useNotes, useSearchNotes } from '@/features/notes/hooks'
 import { pickTextFiles } from '@/features/transfer/transfer'
@@ -119,24 +120,77 @@ export default function NotesListScreen() {
     const search = useSearchNotes(debouncedQuery)
     const { data: notes, isLoading, isError } = searching ? search : normal
 
-    // 回到主页时自动锁定加密区（"返回主页即重新锁定"）
+    // 下拉交互：
+    // - 按住 ≥3 秒 → 进入加密区（计时器触发；Android 事件缺失时由 onRefresh 兜底判定）
+    // - 提前松手 → 正常下拉刷新列表（RefreshControl）
+    const VAULT_HOLD_MS = 3000
+    const pushingRef = useRef(false)
+    const vaultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const vaultTriggeredRef = useRef(false)
+    const touchStartRef = useRef(0)
+    const [refreshing, setRefreshing] = useState(false)
+
+    // 回到主页时自动锁定加密区（"返回主页即重新锁定"），并复位下拉计时状态
     useFocusEffect(
         useCallback(() => {
             vault.lock()
+            vaultTriggeredRef.current = false
+            touchStartRef.current = 0
         }, [vault.lock]),
     )
 
-    // 整个列表页下拉 → 松开直接进入加密区（透明 RefreshControl，无任何可见提示）
-    // 防抖：Android 的 RefreshControl.onRefresh 偶发双触发，避免重复 push 出两个 vault 页面
-    const pushingRef = useRef(false)
     const enterVault = useCallback(() => {
         if (pushingRef.current) return
         pushingRef.current = true
+        vaultTriggeredRef.current = true
         router.push('/vault')
         setTimeout(() => {
             pushingRef.current = false
         }, 600)
     }, [router])
+
+    const clearVaultTimer = useCallback(() => {
+        if (vaultTimerRef.current) {
+            clearTimeout(vaultTimerRef.current)
+            vaultTimerRef.current = null
+        }
+    }, [])
+
+    // 任何触摸开始都记录时间（作为按住时长的起点）
+    const handleTouchStart = useCallback(() => {
+        touchStartRef.current = Date.now()
+    }, [])
+
+    // 列表在顶部开始拖动（下拉）时启动 3 秒计时
+    const handleScrollBeginDrag = useCallback((e: { nativeEvent: { contentOffset: { y: number } } }) => {
+        if (e.nativeEvent.contentOffset.y <= 0 && !vaultTriggeredRef.current) {
+            if (touchStartRef.current === 0) touchStartRef.current = Date.now()
+            clearVaultTimer()
+            vaultTimerRef.current = setTimeout(() => {
+                vaultTimerRef.current = null
+                enterVault()
+            }, VAULT_HOLD_MS)
+        }
+    }, [clearVaultTimer, enterVault])
+
+    // 松手/滚动结束：取消计时（<3 秒松手走 onRefresh 刷新）
+    const handleScrollEndDrag = useCallback(() => {
+        clearVaultTimer()
+    }, [clearVaultTimer])
+
+    // 松手时必然触发：按"触摸开始到松手"的时长判定
+    const handleRefresh = useCallback(() => {
+        clearVaultTimer()
+        if (vaultTriggeredRef.current) return
+        const held = Date.now() - (touchStartRef.current || Date.now())
+        if (held >= VAULT_HOLD_MS) {
+            enterVault()
+            return
+        }
+        setRefreshing(true)
+        notifyNotesChanged()
+        setTimeout(setRefreshing, 600, false)
+    }, [clearVaultTimer, enterVault])
 
     const handleCreate = () => {
     // 惰性新建：不立即落库，进入编辑页，首次输入内容保存时才创建
@@ -228,13 +282,13 @@ export default function NotesListScreen() {
                                     <NoteCard note={item} onPress={() => router.push(`/note/${item.id}`)} />
                                 )}
                                 contentContainerStyle={(notes?.length ?? 0) === 0 ? styles.emptyContainer : styles.listContent}
+                                onTouchStart={handleTouchStart}
+                                onScrollBeginDrag={handleScrollBeginDrag}
+                                onScrollEndDrag={handleScrollEndDrag}
                                 refreshControl={(
                                     <RefreshControl
-                                        refreshing={false}
-                                        onRefresh={enterVault}
-                                        tintColor="transparent"
-                                        colors={['transparent']}
-                                        progressBackgroundColor="transparent"
+                                        refreshing={refreshing}
+                                        onRefresh={handleRefresh}
                                     />
                                 )}
                                 ListEmptyComponent={(

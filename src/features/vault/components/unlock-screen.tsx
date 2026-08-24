@@ -147,10 +147,16 @@ export function UnlockScreen() {
     const hasDevice = vault.mode === 'device' || vault.mode === 'both'
     const canReset = hasDevice
 
-    // 系统验证被取消/返回 → 回到首页，不显示"验证未通过"
+    // 系统验证被取消/返回 → 回到首页，不显示"验证未通过"；
+    // 若加密区已在导航栈根（无页面可返回），直接 replace 到首页
     const backHomeOnCancel = useCallback(
         (ok: boolean) => {
-            if (!ok) router.back()
+            if (ok) return
+            if (router.canGoBack()) {
+                router.back()
+            } else {
+                router.replace('/')
+            }
         },
         [router],
     )

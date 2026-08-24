@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { NoteCard } from '@/features/notes/components/note-card'
 import { useNotesByTag, useTags } from '@/features/tags/hooks'
+import { goBackOr } from '@/utils/navigation'
 
 const styles = StyleSheet.create({
     safe: {
@@ -69,7 +70,7 @@ export default function TagNotesScreen() {
     return (
         <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={styles.header}>
-                <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton}>
+                <Pressable onPress={() => goBackOr('/')} hitSlop={8} style={styles.backButton}>
                     <Text style={styles.backText}>←</Text>
                 </Pressable>
                 <Text style={styles.headerTitle} numberOfLines={1}>

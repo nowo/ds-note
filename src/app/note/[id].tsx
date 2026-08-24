@@ -22,6 +22,7 @@ import {
 import { TagPicker } from '@/features/tags/components/tag-picker'
 import { useNoteTagIds, useTags } from '@/features/tags/hooks'
 import { exportTextFile } from '@/features/transfer/transfer'
+import { goBackOr } from '@/utils/navigation'
 import { formatDateTime } from '@/utils/time'
 
 const styles = StyleSheet.create({
@@ -225,7 +226,7 @@ export default function NoteEditorScreen() {
     const handleDelete = () => {
     // 新建且尚未落库：直接返回，不产生任何数据
         if (isNew && !createdIdRef.current) {
-            router.back()
+            goBackOr('/')
             return
         }
         Alert.alert('删除笔记', '删除后可在回收站中找回（后续版本支持），确定删除吗？', [
@@ -235,7 +236,7 @@ export default function NoteEditorScreen() {
                 style: 'destructive',
                 onPress: () => {
                     remove.mutate(id, {
-                        onSuccess: () => router.back(),
+                        onSuccess: () => goBackOr('/'),
                     })
                 },
             },
@@ -273,7 +274,7 @@ export default function NoteEditorScreen() {
         return (
             <View style={styles.center}>
                 <Text style={styles.missing}>笔记不存在或已被删除</Text>
-                <Pressable onPress={() => router.back()} style={styles.backButton}>
+                <Pressable onPress={() => goBackOr('/')} style={styles.backButton}>
                     <Text style={styles.backButtonText}>返回列表</Text>
                 </Pressable>
             </View>
@@ -287,7 +288,7 @@ export default function NoteEditorScreen() {
         <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
             <View style={styles.toolbar}>
                 <View style={styles.toolbarLeft}>
-                    <Pressable onPress={() => router.back()} hitSlop={8} style={styles.toolbarButton}>
+                    <Pressable onPress={() => goBackOr('/')} hitSlop={8} style={styles.toolbarButton}>
                         <Text style={styles.toolbarText}>←</Text>
                     </Pressable>
                     <Text style={styles.saveStatus}>{saveLabel}</Text>

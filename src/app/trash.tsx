@@ -1,13 +1,4 @@
-import { useRouter } from 'expo-router'
-import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
-} from 'react-native'
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import {
     useEmptyTrash,
@@ -15,6 +6,7 @@ import {
     useRestoreNote,
     useTrashNotes,
 } from '@/features/notes/hooks'
+import { goBackOr } from '@/utils/navigation'
 import { formatDateTime } from '@/utils/time'
 
 const WS_RE = /\s+/g
@@ -145,7 +137,6 @@ const styles = StyleSheet.create({
 })
 
 export default function TrashScreen() {
-    const router = useRouter()
     const { data: notes, isLoading, isError } = useTrashNotes()
     const restore = useRestoreNote()
     const purge = usePurgeNote()
@@ -182,7 +173,7 @@ export default function TrashScreen() {
     return (
         <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={styles.header}>
-                <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backButton}>
+                <Pressable onPress={() => goBackOr('/')} hitSlop={8} style={styles.backButton}>
                     <Text style={styles.backText}>←</Text>
                 </Pressable>
                 <Text style={styles.headerTitle}>回收站</Text>

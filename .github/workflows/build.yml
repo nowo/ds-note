@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   quality:
     name: 检查（类型 + lint + 打包预检）
@@ -55,15 +58,44 @@ jobs:
 
       - uses: android-actions/setup-android@v3
 
+      # NDK 缓存：reanimated/worklets 的原生编译需要 NDK（每次全新 runner 重下要 10-20 分钟）
+      - name: Cache NDK
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ANDROID_HOME }}/ndk
+          key: ndk-${{ runner.os }}-v1
+
+      # Gradle 缓存：依赖下载 + gradle 发行版
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-v1
+
       - run: pnpm install --frozen-lockfile
 
       - name: 生成原生工程（expo prebuild）
         run: npx expo prebuild --platform android --non-interactive
 
-      - name: 构建 Release APK
-        run: cd android && ./gradlew assembleRelease --no-daemon
+      - name: 构建 Release APK（跳过 lint，提升内存）
+        env:
+          GRADLE_OPTS: -Xmx4g
+        run: cd android && ./gradlew assembleRelease -x lint -x lintVitalRelease -Dorg.gradle.jvmargs=-Xmx4096m --no-daemon
 
-      - name: 上传 APK
+      - name: 发布 Release（公开下载，无需登录 GitHub）
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: 我的笔记 APK #${{ github.run_number }}
+          body: |
+            Android 安装包（debug 签名，可直接侧载安装）
+            - 提交：${{ github.sha }}
+            - 触发：${{ github.event_name }}
+          files: android/app/build/outputs/apk/release/*.apk
+
+      - name: 上传 APK Artifact（工作流内调试用）
         uses: actions/upload-artifact@v4
         with:
           name: dsnote-apk

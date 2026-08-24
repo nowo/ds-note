@@ -173,9 +173,9 @@ export default function NotesListScreen() {
 
     const panResponder = useRef(
         PanResponder.create({
-            // 仅在列表顶部且明显向下拖动时接管手势（正常滚动/点击不受影响）
+            // 顶部区域（标题/搜索框，y < 100）随时可下拉；列表区需已在顶部（正常滚动不受影响）
             onMoveShouldSetPanResponderCapture: (_, g) =>
-                scrollOffsetRef.current <= 0
+                (g.y0 < 100 || scrollOffsetRef.current <= 0)
                 && g.dy > 8
                 && Math.abs(g.dy) > Math.abs(g.dx),
             onPanResponderMove: (_, g) => {
@@ -239,6 +239,14 @@ export default function NotesListScreen() {
 
     return (
         <SafeAreaView style={styles.safe} edges={['top']} {...panResponder.panHandlers}>
+            {/* 下拉转圈：固定在页面最顶部，跟随下拉距离下移 */}
+            {pulling && (
+                <Animated.View
+                    style={[styles.pullIndicatorWrap, { transform: [{ translateY: pullAnim }] }]}
+                >
+                    <ActivityIndicator size="large" color="#2f6fed" />
+                </Animated.View>
+            )}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>我的笔记</Text>
                 <View style={styles.headerActions}>
@@ -283,13 +291,6 @@ export default function NotesListScreen() {
 
             {/* 列表区域：页面静态不动，转圈跟随下拉距离下移（Android 原生下拉刷新的样子） */}
             <View style={styles.listArea}>
-                {pulling && (
-                    <Animated.View
-                        style={[styles.pullIndicatorWrap, { transform: [{ translateY: pullAnim }] }]}
-                    >
-                        <ActivityIndicator size="large" color="#2f6fed" />
-                    </Animated.View>
-                )}
                 {isLoading
                     ? (
                             <View style={styles.center}>

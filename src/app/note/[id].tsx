@@ -43,6 +43,10 @@ const styles = StyleSheet.create({
         minWidth: 44,
         alignItems: 'center',
     },
+    toolbarLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
     toolbarActions: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -282,10 +286,12 @@ export default function NoteEditorScreen() {
     return (
         <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
             <View style={styles.toolbar}>
-                <Pressable onPress={() => router.back()} hitSlop={8} style={styles.toolbarButton}>
-                    <Text style={styles.toolbarText}>←</Text>
-                </Pressable>
-                <Text style={styles.saveStatus}>{saveLabel}</Text>
+                <View style={styles.toolbarLeft}>
+                    <Pressable onPress={() => router.back()} hitSlop={8} style={styles.toolbarButton}>
+                        <Text style={styles.toolbarText}>←</Text>
+                    </Pressable>
+                    <Text style={styles.saveStatus}>{saveLabel}</Text>
+                </View>
                 <View style={styles.toolbarActions}>
                     <Pressable onPress={handleExport} hitSlop={8} style={styles.toolbarButton}>
                         <Text style={styles.toolbarText}>📤</Text>

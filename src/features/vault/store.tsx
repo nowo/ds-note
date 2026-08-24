@@ -85,8 +85,14 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     }, [refresh])
 
     // 手动锁定（加密区列表的 🔓 按钮）。注意：不再在"回主页/切后台"时自动锁定——
-    // 会话内解锁一次后保持解锁，直到 app 进程被杀重开（内存中的主密钥随进程消亡而清空）
+    // 会话内解锁一次后保持解锁，直到 app 进程被杀重开（内存中的主密钥随进程消亡而清空）。
+    // 锁定同时设置"跳过自动验证"窗口：锁定瞬间 vault 页面会以 locked 态重渲染出解锁页，
+    // 若不跳过，其挂载即自动唤起系统验证弹窗（与"回首页"同时发生，体验异常）。
+    const skipAutoAuthUntilRef = useRef(0)
     const lock = useCallback(() => {
+        // 锁定后 800ms 内不弹系统验证：锁定瞬间解锁页可能瞬时挂载并自动唤起验证，
+        // 与"返回首页"同时出现体验异常；用户正常再次进入（下拉手势+导航动画）必然超过该窗口
+        skipAutoAuthUntilRef.current = Date.now() + 800
         setMk(null)
         setStatus(s => (s === 'uninitialized' ? s : 'locked'))
     }, [])
@@ -131,6 +137,12 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     const authInFlightRef = useRef(false)
 
     const unlockWithDevice = useCallback(async () => {
+        // 锁定后短暂窗口内不弹系统验证（见 lock()），消费后即失效
+        if (Date.now() < skipAutoAuthUntilRef.current) {
+            skipAutoAuthUntilRef.current = 0
+            setStatus('locked')
+            return false
+        }
         if (authInFlightRef.current) return false
         authInFlightRef.current = true
         try {

@@ -113,16 +113,24 @@ export default function VaultNoteEditorScreen() {
     const vault = useVault()
     const isNew = id === NEW_ID
 
-    const { data: note, isLoading } = useVaultNote(isNew ? '__none__' : id)
+    const [title, setTitle] = useState('')
+    const [content, setContent] = useState('')
+    const [saveState, setSaveState] = useState<SaveState>('saved')
+    // 新建笔记首次保存后拿到真实 id：
+    // - createdIdRef 同步记录（卸载/防抖闭包立即读到，避免重复创建）
+    // - createdId 为 state，驱动数据加载（useVaultNote 按真实 id 重载）
+    const [createdId, setCreatedId] = useState<string | null>(null)
+    const createdIdRef = useRef<string | null>(null)
+    const creatingRef = useRef(false)
+
+    // 数据 id：新建未落库时为占位符；已创建或已有笔记用真实 id
+    const dataId = createdId ?? (isNew ? '__none__' : id)
+
+    const { data: note, isLoading } = useVaultNote(dataId)
     const create = useCreateVaultNote()
     const update = useUpdateVaultNote()
     const remove = useDeleteVaultNote()
     const moveOut = useMoveVaultNoteToNormal()
-
-    const [title, setTitle] = useState('')
-    const [content, setContent] = useState('')
-    const [saveState, setSaveState] = useState<SaveState>('saved')
-    const createdIdRef = useRef<string | null>(null)
 
     const latestRef = useRef({ title: '', content: '' })
     latestRef.current = { title, content }
@@ -133,16 +141,24 @@ export default function VaultNoteEditorScreen() {
             // 全新加密笔记：标题内容都为空 → 不创建、不保存
             if (title.trim().length === 0 && content.trim().length === 0) return
             if (!createdIdRef.current) {
-                const created = await create.mutateAsync({ title, content })
-                createdIdRef.current = created.id
-                router.replace(`/vault-note/${created.id}`)
+                // 创建中防并发：防抖保存与卸载保存可能同时触发
+                if (creatingRef.current) return
+                creatingRef.current = true
+                try {
+                    const created = await create.mutateAsync({ title, content })
+                    createdIdRef.current = created.id
+                    // 不换路由：只记录真实 id，编辑器内容原地保留，避免重挂载闪烁
+                    setCreatedId(created.id)
+                } finally {
+                    creatingRef.current = false
+                }
                 return
             }
             await update.mutateAsync({ id: createdIdRef.current, title, content })
             return
         }
         await update.mutateAsync({ id, title, content })
-    }, [isNew, create, update, id, router])
+    }, [isNew, create, update, id])
 
     const saveNowWithState = useCallback(async () => {
         setSaveState('saving')
@@ -191,7 +207,7 @@ export default function VaultNoteEditorScreen() {
                 text: '删除',
                 style: 'destructive',
                 onPress: () => {
-                    remove.mutate(id, {
+                    remove.mutate(createdIdRef.current ?? id, {
                         onSuccess: () => goBackOr('/vault'),
                     })
                 },
@@ -209,13 +225,13 @@ export default function VaultNoteEditorScreen() {
     }
 
     const handleMoveOut = () => {
-        if (isNew) return
+        if (isNew && !createdIdRef.current) return
         Alert.alert('移出加密区', '将把该笔记还原为普通笔记（明文存储，不再加密）。确定吗？', [
             { text: '取消', style: 'cancel' },
             {
                 text: '移出',
                 onPress: () => {
-                    moveOut.mutate(id, latestRef.current, {
+                    moveOut.mutate(createdIdRef.current ?? id, latestRef.current, {
                         onSuccess: () => goBackOr('/vault'),
                     })
                 },
@@ -278,7 +294,7 @@ export default function VaultNoteEditorScreen() {
                     <Pressable onPress={handleExport} hitSlop={8} style={styles.toolbarButton}>
                         <AppIcon name="mdi:export" size={20} color="#333" />
                     </Pressable>
-                    {!isNew && (
+                    {(!isNew || createdId) && (
                         <Pressable onPress={handleMoveOut} hitSlop={8} style={styles.toolbarButton}>
                             <AppIcon name="mdi:arrow-u-left-top" size={20} color="#333" />
                         </Pressable>
@@ -300,7 +316,7 @@ export default function VaultNoteEditorScreen() {
                         scheduleSave()
                     }}
                 />
-                {!isNew && note && (
+                {note && (!isNew || createdId) && (
                     <Text style={styles.meta}>
                         创建于
                         {' '}

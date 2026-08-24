@@ -1,5 +1,5 @@
 import type { ExportFormat } from '@/features/transfer/transfer'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
     ActivityIndicator,
@@ -143,22 +143,28 @@ type SaveState = 'saved' | 'saving' | 'error'
 
 export default function NoteEditorScreen() {
     const { id } = useLocalSearchParams<{ id: string }>()
-    const router = useRouter()
     const isNew = id === NEW_ID
-
-    const { data: note, isLoading } = useNote(isNew ? '__none__' : id)
-    const create = useCreateNote()
-    const update = useUpdateNote()
-    const remove = useDeleteNote()
-    const { data: allTags } = useTags()
-    const { data: noteTagIds } = useNoteTagIds(isNew ? '__none__' : id)
 
     const [title, setTitle] = useState('')
     const [content, setContent] = useState('')
     const [saveState, setSaveState] = useState<SaveState>('saved')
     const [tagPickerVisible, setTagPickerVisible] = useState(false)
-    // 新建笔记首次保存后拿到真实 id；之后所有保存都更新这条
+    // 新建笔记首次保存后拿到真实 id：
+    // - createdIdRef 同步记录（卸载/防抖闭包立即读到，避免重复创建）
+    // - createdId 为 state，驱动数据加载（useNote 按真实 id 重载）
+    const [createdId, setCreatedId] = useState<string | null>(null)
     const createdIdRef = useRef<string | null>(null)
+    const creatingRef = useRef(false)
+
+    // 数据 id：新建未落库时为占位符；已创建或已有笔记用真实 id
+    const dataId = createdId ?? (isNew ? '__none__' : id)
+
+    const { data: note, isLoading } = useNote(dataId)
+    const create = useCreateNote()
+    const update = useUpdateNote()
+    const remove = useDeleteNote()
+    const { data: allTags } = useTags()
+    const { data: noteTagIds } = useNoteTagIds(dataId)
 
     // 始终持有最新编辑内容的 ref，供防抖与卸载前保存读取
     const latestRef = useRef({ title: '', content: '' })
@@ -170,17 +176,24 @@ export default function NoteEditorScreen() {
             // 全新笔记：标题内容都为空 → 不创建、不保存
             if (title.trim().length === 0 && content.trim().length === 0) return
             if (!createdIdRef.current) {
-                const created = await create.mutateAsync({ title, content })
-                createdIdRef.current = created.id
-                // 路由换成真实 id，避免重载后重复新建
-                router.replace(`/note/${created.id}`)
+                // 创建中防并发：防抖保存与卸载保存可能同时触发
+                if (creatingRef.current) return
+                creatingRef.current = true
+                try {
+                    const created = await create.mutateAsync({ title, content })
+                    createdIdRef.current = created.id
+                    // 不换路由：只记录真实 id，编辑器内容原地保留，避免重挂载闪烁
+                    setCreatedId(created.id)
+                } finally {
+                    creatingRef.current = false
+                }
                 return
             }
             await update.mutateAsync({ id: createdIdRef.current, title, content })
             return
         }
         await update.mutateAsync({ id, title, content })
-    }, [isNew, create, update, id, router])
+    }, [isNew, create, update, id])
 
     const saveNowWithState = useCallback(async () => {
         setSaveState('saving')
@@ -230,7 +243,7 @@ export default function NoteEditorScreen() {
                 text: '删除',
                 style: 'destructive',
                 onPress: () => {
-                    remove.mutate(id, {
+                    remove.mutate(createdIdRef.current ?? id, {
                         onSuccess: () => goBackOr('/'),
                     })
                 },
@@ -312,7 +325,7 @@ export default function NoteEditorScreen() {
                         scheduleSave()
                     }}
                 />
-                {!isNew && note && (
+                {note && (!isNew || createdId) && (
                     <Text style={styles.meta}>
                         创建于
                         {' '}
@@ -322,7 +335,7 @@ export default function NoteEditorScreen() {
                         {formatDateTime(note.updatedAt)}
                     </Text>
                 )}
-                {!isNew && (
+                {(!isNew || createdId) && (
                     <View style={styles.tagRow}>
                         {(allTags ?? [])
                             .filter(t => noteTagIds?.includes(t.id))
@@ -351,10 +364,10 @@ export default function NoteEditorScreen() {
                 />
             </KeyboardAvoidingView>
 
-            {!isNew && (
+            {(!isNew || createdId) && (
                 <TagPicker
                     visible={tagPickerVisible}
-                    noteId={id}
+                    noteId={createdId ?? id}
                     onClose={() => setTagPickerVisible(false)}
                 />
             )}

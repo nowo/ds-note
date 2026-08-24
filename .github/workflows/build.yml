@@ -1,0 +1,70 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  quality:
+    name: 检查（类型 + lint + 打包预检）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 类型检查
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: 打包预检（expo export，无需原生 SDK）
+        run: npx expo export --platform android --no-bytecode --output-dir /tmp/export-check
+
+  android-apk:
+    name: 构建 Android APK（GitHub 云端 SDK，无需账号）
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 生成原生工程（expo prebuild）
+        run: npx expo prebuild --platform android --non-interactive
+
+      - name: 构建 Release APK
+        run: cd android && ./gradlew assembleRelease --no-daemon
+
+      - name: 上传 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsnote-apk
+          path: android/app/build/outputs/apk/release/*.apk

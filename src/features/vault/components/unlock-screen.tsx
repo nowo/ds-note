@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'expo-router'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
     ActivityIndicator,
     Pressable,
@@ -136,6 +137,7 @@ const styles = StyleSheet.create({
  */
 export function UnlockScreen() {
     const vault = useVault()
+    const router = useRouter()
     const [password, setPassword] = useState('')
     const [resetting, setResetting] = useState(false)
     const [newPassword, setNewPassword] = useState('')
@@ -145,16 +147,25 @@ export function UnlockScreen() {
     const hasDevice = vault.mode === 'device' || vault.mode === 'both'
     const canReset = hasDevice
 
-    // 纯设备锁模式：进入页面自动唤起系统验证（只触发一次）
+    // 系统验证被取消/返回 → 回到首页，不显示"验证未通过"
+    const backHomeOnCancel = useCallback(
+        (ok: boolean) => {
+            if (!ok) router.back()
+        },
+        [router],
+    )
+
+    // 纯设备锁模式：进入页面自动唤起系统验证（只触发一次）；取消则回首页
     useEffect(() => {
         if (vault.mode === 'device' && vault.status === 'locked' && !autoDeviceRef.current) {
             autoDeviceRef.current = true
-            void vault.unlockWithDevice()
+            void vault.unlockWithDevice().then(backHomeOnCancel)
         }
-    }, [])
+    }, [backHomeOnCancel])
 
     const handleDevice = async () => {
-        await vault.unlockWithDevice()
+        const ok = await vault.unlockWithDevice()
+        backHomeOnCancel(ok)
     }
 
     const handlePassword = async () => {

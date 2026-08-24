@@ -59,6 +59,17 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: '#111',
     },
+    // 弹窗内输入框：纵向布局下不能带 flex:1，否则高度被撑变形
+    modalInput: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: '#ddd',
+        paddingHorizontal: 12,
+        paddingVertical: 9,
+        fontSize: 15,
+        color: '#111',
+    },
     addButton: {
         backgroundColor: '#2f6fed',
         borderRadius: 10,
@@ -318,7 +329,7 @@ export default function TagsScreen() {
                     <View style={styles.sheet}>
                         <Text style={styles.sheetTitle}>重命名标签</Text>
                         <TextInput
-                            style={styles.input}
+                            style={styles.modalInput}
                             value={editName}
                             onChangeText={setEditName}
                             autoCapitalize="none"

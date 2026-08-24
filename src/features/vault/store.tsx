@@ -9,7 +9,6 @@ import {
     useState,
 
 } from 'react'
-import { AppState } from 'react-native'
 import { useDbContext } from '@/db/db-provider'
 import { deleteMeta, getMeta, setMeta } from './api'
 import {
@@ -85,18 +84,11 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         void canUseDeviceAuth().then(setCanUseDevice)
     }, [refresh])
 
-    // App 进入后台/失焦 → 立即丢弃主密钥并锁定
+    // 手动锁定（加密区列表的 🔓 按钮）。注意：不再在"回主页/切后台"时自动锁定——
+    // 会话内解锁一次后保持解锁，直到 app 进程被杀重开（内存中的主密钥随进程消亡而清空）
     const lock = useCallback(() => {
         setMk(null)
         setStatus(s => (s === 'uninitialized' ? s : 'locked'))
-    }, [])
-    const lockRef = useRef(lock)
-    lockRef.current = lock
-    useEffect(() => {
-        const sub = AppState.addEventListener('change', (state) => {
-            if (state !== 'active') lockRef.current()
-        })
-        return () => sub.remove()
     }, [])
 
     const setupDeviceOnly = useCallback(async () => {
@@ -150,7 +142,9 @@ export function VaultProvider({ children }: { children: ReactNode }) {
             }
             const authed = await authenticateDevice('解锁加密区')
             if (!authed) {
-                return fail('验证未通过')
+                // 用户取消/返回系统验证：不报错、静默回到锁定态，由解锁页决定返回首页
+                setStatus('locked')
+                return false
             }
             try {
                 const kek = await getOrCreateDeviceKek()

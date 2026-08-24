@@ -3,12 +3,14 @@ import { useCallback, useRef, useState } from 'react'
 import {
     ActivityIndicator,
     Alert,
+    Animated,
     FlatList,
+    PanResponder,
     Pressable,
-    RefreshControl,
     StyleSheet,
     Text,
     TextInput,
+    useWindowDimensions,
     View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -16,7 +18,6 @@ import { notifyNotesChanged } from '@/data-layer'
 import { NoteCard } from '@/features/notes/components/note-card'
 import { useCreateNote, useNotes, useSearchNotes } from '@/features/notes/hooks'
 import { pickTextFiles } from '@/features/transfer/transfer'
-import { useVault } from '@/features/vault/store'
 
 const styles = StyleSheet.create({
     safe: {
@@ -78,6 +79,18 @@ const styles = StyleSheet.create({
         paddingTop: 4,
         paddingBottom: 24,
     },
+    listArea: {
+        flex: 1,
+    },
+    pullIndicatorWrap: {
+        position: 'absolute',
+        top: 2,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        paddingVertical: 10,
+        zIndex: 10,
+    },
     emptyContainer: {
         flexGrow: 1,
         justifyContent: 'center',
@@ -101,7 +114,6 @@ const styles = StyleSheet.create({
 
 export default function NotesListScreen() {
     const router = useRouter()
-    const vault = useVault()
     const createNote = useCreateNote()
 
     // 搜索：输入防抖 300ms
@@ -120,77 +132,84 @@ export default function NotesListScreen() {
     const search = useSearchNotes(debouncedQuery)
     const { data: notes, isLoading, isError } = searching ? search : normal
 
-    // 下拉交互：
-    // - 按住 ≥3 秒 → 进入加密区（计时器触发；Android 事件缺失时由 onRefresh 兜底判定）
-    // - 提前松手 → 正常下拉刷新列表（RefreshControl）
-    const VAULT_HOLD_MS = 3000
+    // 下拉交互（按距离判定，替代"按住 3 秒"）：
+    // - 下拉距离 ≥ 屏幕高度的 1/3 → 进入加密区
+    // - 小于该距离松手 → 刷新列表
+    // 标准 RefreshControl 在 Android 上不暴露下拉距离，改用自定义 PanResponder 手势，
+    // 跨平台一致：整页跟随下拉移动 + 顶部刷新图标，松手按距离决定去向。
+    const { height: screenHeight } = useWindowDimensions()
+    // 用 ref 保存阈值，避免 PanResponder 闭包捕获旧值（横竖屏切换时仍正确）
+    const vaultDistanceRef = useRef(screenHeight / 3)
+    vaultDistanceRef.current = screenHeight / 3
     const pushingRef = useRef(false)
-    const vaultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const vaultTriggeredRef = useRef(false)
-    const touchStartRef = useRef(0)
-    const [refreshing, setRefreshing] = useState(false)
+    const scrollOffsetRef = useRef(0)
+    const [pulling, setPulling] = useState(false)
+    const pullAnim = useRef(new Animated.Value(0)).current
 
-    // 回到主页时自动锁定加密区（"返回主页即重新锁定"），并复位下拉计时状态
+    // 回到主页：复位下拉状态（不再自动锁定加密区——会话内解锁一次后保持解锁，
+    // 仅 app 进程被杀重开时内存主密钥清空、才需重新验证）
     useFocusEffect(
         useCallback(() => {
-            vault.lock()
-            vaultTriggeredRef.current = false
-            touchStartRef.current = 0
-        }, [vault.lock]),
+            setPulling(false)
+            pullAnim.setValue(0)
+        }, [pullAnim]),
     )
 
     const enterVault = useCallback(() => {
         if (pushingRef.current) return
         pushingRef.current = true
-        vaultTriggeredRef.current = true
         router.push('/vault')
         setTimeout(() => {
             pushingRef.current = false
         }, 600)
     }, [router])
 
-    const clearVaultTimer = useCallback(() => {
-        if (vaultTimerRef.current) {
-            clearTimeout(vaultTimerRef.current)
-            vaultTimerRef.current = null
-        }
-    }, [])
-
-    // 任何触摸开始都记录时间（作为按住时长的起点）
-    const handleTouchStart = useCallback(() => {
-        touchStartRef.current = Date.now()
-    }, [])
-
-    // 列表在顶部开始拖动（下拉）时启动 3 秒计时
-    const handleScrollBeginDrag = useCallback((e: { nativeEvent: { contentOffset: { y: number } } }) => {
-        if (e.nativeEvent.contentOffset.y <= 0 && !vaultTriggeredRef.current) {
-            if (touchStartRef.current === 0) touchStartRef.current = Date.now()
-            clearVaultTimer()
-            vaultTimerRef.current = setTimeout(() => {
-                vaultTimerRef.current = null
-                enterVault()
-            }, VAULT_HOLD_MS)
-        }
-    }, [clearVaultTimer, enterVault])
-
-    // 松手/滚动结束：取消计时（<3 秒松手走 onRefresh 刷新）
-    const handleScrollEndDrag = useCallback(() => {
-        clearVaultTimer()
-    }, [clearVaultTimer])
-
-    // 松手时必然触发：按"触摸开始到松手"的时长判定
-    const handleRefresh = useCallback(() => {
-        clearVaultTimer()
-        if (vaultTriggeredRef.current) return
-        const held = Date.now() - (touchStartRef.current || Date.now())
-        if (held >= VAULT_HOLD_MS) {
-            enterVault()
-            return
-        }
-        setRefreshing(true)
+    const refreshNotes = useCallback(() => {
         notifyNotesChanged()
-        setTimeout(setRefreshing, 600, false)
-    }, [clearVaultTimer, enterVault])
+    }, [])
+
+    // 仿原生下拉手感：橡皮筋阻尼（越拉越费力），松手回弹
+    const dampPull = (raw: number) => (raw < 200 ? raw * 0.65 : 130 + (raw - 200) * 0.25)
+
+    const panResponder = useRef(
+        PanResponder.create({
+            // 仅在列表顶部且明显向下拖动时接管手势（正常滚动/点击不受影响）
+            onMoveShouldSetPanResponderCapture: (_, g) =>
+                scrollOffsetRef.current <= 0
+                && g.dy > 8
+                && Math.abs(g.dy) > Math.abs(g.dx),
+            onPanResponderMove: (_, g) => {
+                const dy = Math.max(0, g.dy)
+                // 显示用阻尼值（仿原生回弹阻力），判定用真实距离
+                pullAnim.setValue(dampPull(dy))
+                setPulling(true)
+            },
+            onPanResponderRelease: (_, g) => {
+                const dy = Math.max(0, g.dy)
+                if (dy >= vaultDistanceRef.current) {
+                    // 进入加密区：直接回弹并跳转
+                    setPulling(false)
+                    Animated.spring(pullAnim, { toValue: 0, useNativeDriver: true, friction: 8 }).start()
+                    enterVault()
+                } else {
+                    // 刷新：转圈保持 ~700ms 再回弹（模拟原生刷新动画）
+                    refreshNotes()
+                    setTimeout(() => {
+                        setPulling(false)
+                        Animated.spring(pullAnim, { toValue: 0, useNativeDriver: true, friction: 8 }).start()
+                    }, 700)
+                }
+            },
+            onPanResponderTerminate: () => {
+                setPulling(false)
+                pullAnim.setValue(0)
+            },
+        }),
+    ).current
+
+    const handleScroll = useCallback((e: { nativeEvent: { contentOffset: { y: number } } }) => {
+        scrollOffsetRef.current = e.nativeEvent.contentOffset.y
+    }, [])
 
     const handleCreate = () => {
     // 惰性新建：不立即落库，进入编辑页，首次输入内容保存时才创建
@@ -219,7 +238,7 @@ export default function NotesListScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.safe} edges={['top']}>
+        <SafeAreaView style={styles.safe} edges={['top']} {...panResponder.panHandlers}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>我的笔记</Text>
                 <View style={styles.headerActions}>
@@ -262,54 +281,57 @@ export default function NotesListScreen() {
                 />
             </View>
 
-            {isLoading
-                ? (
-                        <View style={styles.center}>
-                            <ActivityIndicator size="large" />
-                        </View>
-                    )
-                : isError
+            {/* 列表区域：页面静态不动，转圈跟随下拉距离下移（Android 原生下拉刷新的样子） */}
+            <View style={styles.listArea}>
+                {pulling && (
+                    <Animated.View
+                        style={[styles.pullIndicatorWrap, { transform: [{ translateY: pullAnim }] }]}
+                    >
+                        <ActivityIndicator size="large" color="#2f6fed" />
+                    </Animated.View>
+                )}
+                {isLoading
                     ? (
                             <View style={styles.center}>
-                                <Text style={styles.hint}>加载失败，请重试</Text>
+                                <ActivityIndicator size="large" />
                             </View>
                         )
-                    : (
-                            <FlatList
-                                data={notes}
-                                keyExtractor={item => item.id}
-                                renderItem={({ item }) => (
-                                    <NoteCard note={item} onPress={() => router.push(`/note/${item.id}`)} />
-                                )}
-                                contentContainerStyle={(notes?.length ?? 0) === 0 ? styles.emptyContainer : styles.listContent}
-                                onTouchStart={handleTouchStart}
-                                onScrollBeginDrag={handleScrollBeginDrag}
-                                onScrollEndDrag={handleScrollEndDrag}
-                                refreshControl={(
-                                    <RefreshControl
-                                        refreshing={refreshing}
-                                        onRefresh={handleRefresh}
-                                    />
-                                )}
-                                ListEmptyComponent={(
-                                    <View style={styles.center}>
-                                        {searching
-                                            ? (
-                                                    <>
-                                                        <Text style={styles.emptyTitle}>无匹配结果</Text>
-                                                        <Text style={styles.hint}>换个关键词试试</Text>
-                                                    </>
-                                                )
-                                            : (
-                                                    <>
-                                                        <Text style={styles.emptyTitle}>还没有笔记</Text>
-                                                        <Text style={styles.hint}>点击右上角「＋ 新建」开始记录</Text>
-                                                    </>
-                                                )}
-                                    </View>
-                                )}
-                            />
-                        )}
+                    : isError
+                        ? (
+                                <View style={styles.center}>
+                                    <Text style={styles.hint}>加载失败，请重试</Text>
+                                </View>
+                            )
+                        : (
+                                <FlatList
+                                    data={notes}
+                                    keyExtractor={item => item.id}
+                                    renderItem={({ item }) => (
+                                        <NoteCard note={item} onPress={() => router.push(`/note/${item.id}`)} />
+                                    )}
+                                    contentContainerStyle={(notes?.length ?? 0) === 0 ? styles.emptyContainer : styles.listContent}
+                                    onScroll={handleScroll}
+                                    scrollEventThrottle={16}
+                                    ListEmptyComponent={(
+                                        <View style={styles.center}>
+                                            {searching
+                                                ? (
+                                                        <>
+                                                            <Text style={styles.emptyTitle}>无匹配结果</Text>
+                                                            <Text style={styles.hint}>换个关键词试试</Text>
+                                                        </>
+                                                    )
+                                                : (
+                                                        <>
+                                                            <Text style={styles.emptyTitle}>还没有笔记</Text>
+                                                            <Text style={styles.hint}>点击右上角「＋ 新建」开始记录</Text>
+                                                        </>
+                                                    )}
+                                        </View>
+                                    )}
+                                />
+                            )}
+            </View>
         </SafeAreaView>
     )
 }

@@ -1,5 +1,6 @@
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { AppIcon } from '@/components/app-icon'
 import {
     useEmptyTrash,
     usePurgeNote,
@@ -26,10 +27,6 @@ const styles = StyleSheet.create({
     backButton: {
         padding: 8,
         minWidth: 44,
-    },
-    backText: {
-        fontSize: 20,
-        color: '#333',
     },
     headerTitle: {
         fontSize: 18,
@@ -116,6 +113,8 @@ const styles = StyleSheet.create({
         borderColor: '#2f6fed',
         paddingHorizontal: 14,
         paddingVertical: 7,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     restoreText: {
         color: '#2f6fed',
@@ -128,6 +127,8 @@ const styles = StyleSheet.create({
         borderColor: '#e0a3a3',
         paddingHorizontal: 14,
         paddingVertical: 7,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     purgeText: {
         color: '#c0392b',
@@ -174,7 +175,7 @@ export default function TrashScreen() {
         <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={styles.header}>
                 <Pressable onPress={() => goBackOr('/')} hitSlop={8} style={styles.backButton}>
-                    <Text style={styles.backText}>←</Text>
+                    <AppIcon name="mdi:arrow-left" size={20} color="#333" />
                 </Pressable>
                 <Text style={styles.headerTitle}>回收站</Text>
                 <Pressable
@@ -225,13 +226,15 @@ export default function TrashScreen() {
                                                 style={styles.restoreButton}
                                                 onPress={() => handleRestore(item.id)}
                                             >
-                                                <Text style={styles.restoreText}>↩ 恢复</Text>
+                                                <AppIcon name="mdi:restore" size={16} color="#2f6fed" />
+                                                <Text style={styles.restoreText}> 恢复</Text>
                                             </Pressable>
                                             <Pressable
                                                 style={styles.purgeButton}
                                                 onPress={() => handlePurge(item.id)}
                                             >
-                                                <Text style={styles.purgeText}>🗑 彻底删除</Text>
+                                                <AppIcon name="mdi:delete-outline" size={16} color="#c0392b" />
+                                                <Text style={styles.purgeText}> 彻底删除</Text>
                                             </Pressable>
                                         </View>
                                     </View>

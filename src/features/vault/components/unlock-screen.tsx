@@ -8,6 +8,7 @@ import {
     TextInput,
     View,
 } from 'react-native'
+import { AppIcon } from '@/components/app-icon'
 import { useVault } from '../store'
 
 const styles = StyleSheet.create({
@@ -28,6 +29,10 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: '700',
         color: '#111',
+    },
+    titleWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
         marginTop: 24,
     },
     subtitle: {
@@ -83,9 +88,6 @@ const styles = StyleSheet.create({
         borderColor: '#c9d6f2',
         backgroundColor: '#eef3ff',
         paddingVertical: 12,
-    },
-    fingerIcon: {
-        fontSize: 18,
     },
     fingerText: {
         fontSize: 15,
@@ -203,7 +205,10 @@ export function UnlockScreen() {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>🔒 加密区</Text>
+            <View style={styles.titleWrap}>
+                <AppIcon name="mdi:lock" size={22} color="#111" />
+                <Text style={styles.title}> 加密区</Text>
+            </View>
             <Text style={styles.subtitle}>
                 {vault.mode === 'device'
                     ? '请通过系统验证（指纹 / 面容 / 锁屏密码）解锁'
@@ -237,7 +242,7 @@ export function UnlockScreen() {
 
                             {hasDevice && (
                                 <Pressable style={styles.fingerButton} onPress={handleDevice}>
-                                    <Text style={styles.fingerIcon}>🔐</Text>
+                                    <AppIcon name="mdi:fingerprint" size={20} color="#2f6fed" />
                                     <Text style={styles.fingerText}>指纹 / 面容 / 锁屏密码</Text>
                                 </Pressable>
                             )}

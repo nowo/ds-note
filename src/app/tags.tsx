@@ -12,6 +12,7 @@ import {
     View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { AppIcon } from '@/components/app-icon'
 import { useCreateTag, useDeleteTag, useRenameTag, useTags } from '@/features/tags/hooks'
 import { goBackOr } from '@/utils/navigation'
 
@@ -30,10 +31,6 @@ const styles = StyleSheet.create({
     backButton: {
         padding: 8,
         minWidth: 44,
-    },
-    backText: {
-        fontSize: 20,
-        color: '#333',
     },
     headerTitle: {
         fontSize: 18,
@@ -147,12 +144,6 @@ const styles = StyleSheet.create({
         padding: 6,
         marginLeft: 6,
     },
-    renameText: {
-        fontSize: 15,
-    },
-    deleteText: {
-        fontSize: 15,
-    },
     backdrop: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.4)',
@@ -253,7 +244,7 @@ export default function TagsScreen() {
         <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={styles.header}>
                 <Pressable onPress={() => goBackOr('/')} hitSlop={8} style={styles.backButton}>
-                    <Text style={styles.backText}>←</Text>
+                    <AppIcon name="mdi:arrow-left" size={20} color="#333" />
                 </Pressable>
                 <Text style={styles.headerTitle}>标签</Text>
                 <View style={styles.headerRight} />
@@ -308,10 +299,10 @@ export default function TagsScreen() {
                                             </Text>
                                         </Pressable>
                                         <Pressable onPress={() => openRename(item.id, item.name)} hitSlop={8} style={styles.rowAction}>
-                                            <Text style={styles.renameText}>✏️</Text>
+                                            <AppIcon name="mdi:pencil" size={18} color="#555" />
                                         </Pressable>
                                         <Pressable onPress={() => handleDelete(item.id, item.name)} hitSlop={8} style={styles.rowAction}>
-                                            <Text style={styles.deleteText}>🗑</Text>
+                                            <AppIcon name="mdi:delete-outline" size={18} color="#c0392b" />
                                         </Pressable>
                                     </View>
                                 )}

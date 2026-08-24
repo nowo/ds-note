@@ -13,6 +13,7 @@ import {
     View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { AppIcon } from '@/components/app-icon'
 import { exportTextFile } from '@/features/transfer/transfer'
 import {
     useCreateVaultNote,
@@ -51,14 +52,6 @@ const styles = StyleSheet.create({
     toolbarActions: {
         flexDirection: 'row',
         alignItems: 'center',
-    },
-    toolbarText: {
-        fontSize: 20,
-        color: '#333',
-    },
-    deleteText: {
-        fontSize: 18,
-        color: '#c0392b',
     },
     saveStatus: {
         fontSize: 12,
@@ -277,21 +270,21 @@ export default function VaultNoteEditorScreen() {
             <View style={styles.toolbar}>
                 <View style={styles.toolbarLeft}>
                     <Pressable onPress={() => goBackOr('/vault')} hitSlop={8} style={styles.toolbarButton}>
-                        <Text style={styles.toolbarText}>←</Text>
+                        <AppIcon name="mdi:arrow-left" size={20} color="#333" />
                     </Pressable>
                     <Text style={styles.saveStatus}>{saveLabel}</Text>
                 </View>
                 <View style={styles.toolbarActions}>
                     <Pressable onPress={handleExport} hitSlop={8} style={styles.toolbarButton}>
-                        <Text style={styles.toolbarText}>📤</Text>
+                        <AppIcon name="mdi:export" size={20} color="#333" />
                     </Pressable>
                     {!isNew && (
                         <Pressable onPress={handleMoveOut} hitSlop={8} style={styles.toolbarButton}>
-                            <Text style={styles.toolbarText}>↩</Text>
+                            <AppIcon name="mdi:arrow-u-left-top" size={20} color="#333" />
                         </Pressable>
                     )}
                     <Pressable onPress={handleDelete} hitSlop={8} style={styles.toolbarButton}>
-                        <Text style={styles.deleteText}>🗑</Text>
+                        <AppIcon name="mdi:delete-outline" size={20} color="#c0392b" />
                     </Pressable>
                 </View>
             </View>

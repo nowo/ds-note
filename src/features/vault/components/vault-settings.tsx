@@ -9,6 +9,7 @@ import {
     TextInput,
     View,
 } from 'react-native'
+import { AppIcon } from '@/components/app-icon'
 import { useVault } from '../store'
 
 const styles = StyleSheet.create({
@@ -60,6 +61,10 @@ const styles = StyleSheet.create({
     done: {
         color: '#1e8e3e',
         fontSize: 14,
+    },
+    doneWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     errorText: {
         color: '#c0392b',
@@ -192,7 +197,12 @@ export function VaultSettings({ visible, onClose }: { visible: boolean, onClose:
                 <View style={styles.sheet}>
                     <Text style={styles.title}>加密区设置</Text>
 
-                    {done && <Text style={styles.done}>✅ 密码已更新</Text>}
+                    {done && (
+                        <View style={styles.doneWrap}>
+                            <AppIcon name="mdi:check-circle" size={16} color="#1e8e3e" />
+                            <Text style={styles.done}> 密码已更新</Text>
+                        </View>
+                    )}
                     {actionError && <Text style={styles.errorText}>{actionError}</Text>}
 
                     <Text style={styles.label}>修改自定义密码</Text>
@@ -253,7 +263,10 @@ export function VaultSettings({ visible, onClose }: { visible: boolean, onClose:
                                 </Text>
                             </Pressable>
                             {removeDone && (
-                                <Text style={styles.done}>✅ 已删除，加密区现使用设备锁解锁</Text>
+                                <View style={styles.doneWrap}>
+                                    <AppIcon name="mdi:check-circle" size={16} color="#1e8e3e" />
+                                    <Text style={styles.done}> 已删除，加密区现使用设备锁解锁</Text>
+                                </View>
                             )}
                         </View>
                     )}

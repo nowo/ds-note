@@ -1,3 +1,4 @@
+// @@iconify-code-gen
 import { Stack } from 'expo-router'
 import { DbProvider } from '@/db/db-provider'
 import { MigrationsGate } from '@/db/migrations-gate'

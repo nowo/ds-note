@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { AppIcon } from '@/components/app-icon'
 import { NoteCard } from '@/features/notes/components/note-card'
 import { useNotesByTag, useTags } from '@/features/tags/hooks'
 import { goBackOr } from '@/utils/navigation'
@@ -20,10 +21,6 @@ const styles = StyleSheet.create({
     backButton: {
         padding: 8,
         minWidth: 44,
-    },
-    backText: {
-        fontSize: 20,
-        color: '#333',
     },
     headerTitle: {
         flex: 1,
@@ -71,7 +68,7 @@ export default function TagNotesScreen() {
         <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={styles.header}>
                 <Pressable onPress={() => goBackOr('/')} hitSlop={8} style={styles.backButton}>
-                    <Text style={styles.backText}>←</Text>
+                    <AppIcon name="mdi:arrow-left" size={20} color="#333" />
                 </Pressable>
                 <Text style={styles.headerTitle} numberOfLines={1}>
                     #

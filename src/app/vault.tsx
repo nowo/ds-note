@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { AppIcon } from '@/components/app-icon'
 import { NormalNotesPicker } from '@/features/vault/components/normal-notes-picker'
 import { SetupFlow } from '@/features/vault/components/setup-flow'
 import { UnlockScreen } from '@/features/vault/components/unlock-screen'
@@ -28,6 +29,10 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#111',
     },
+    headerTitleWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
     headerActions: {
         flexDirection: 'row',
         gap: 4,
@@ -36,9 +41,6 @@ const styles = StyleSheet.create({
         padding: 8,
         minWidth: 40,
         alignItems: 'center',
-    },
-    iconText: {
-        fontSize: 18,
     },
     listContent: {
         paddingTop: 4,
@@ -78,12 +80,6 @@ const styles = StyleSheet.create({
         shadowRadius: 6,
         shadowOffset: { width: 0, height: 3 },
         elevation: 5,
-    },
-    fabText: {
-        color: '#fff',
-        fontSize: 28,
-        fontWeight: '600',
-        lineHeight: 30,
     },
 })
 
@@ -132,18 +128,21 @@ function VaultList({ onOpenSettings }: { onOpenSettings: () => void }) {
         <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={styles.header}>
                 <Pressable onPress={() => goBackOr('/')} hitSlop={8} style={styles.iconButton}>
-                    <Text style={styles.iconText}>←</Text>
+                    <AppIcon name="mdi:arrow-left" size={20} color="#333" />
                 </Pressable>
-                <Text style={styles.headerTitle}>🔒 加密笔记</Text>
+                <View style={styles.headerTitleWrap}>
+                    <AppIcon name="mdi:lock" size={18} color="#111" />
+                    <Text style={styles.headerTitle}> 加密笔记</Text>
+                </View>
                 <View style={styles.headerActions}>
                     <Pressable onPress={() => setImportVisible(true)} hitSlop={8} style={styles.iconButton}>
-                        <Text style={styles.iconText}>📥</Text>
+                        <AppIcon name="mdi:import" size={20} color="#333" />
                     </Pressable>
                     <Pressable onPress={handleLock} hitSlop={8} style={styles.iconButton}>
-                        <Text style={styles.iconText}>🔓</Text>
+                        <AppIcon name="mdi:lock-open-variant" size={20} color="#333" />
                     </Pressable>
                     <Pressable onPress={onOpenSettings} hitSlop={8} style={styles.iconButton}>
-                        <Text style={styles.iconText}>⚙️</Text>
+                        <AppIcon name="mdi:cog" size={20} color="#333" />
                     </Pressable>
                 </View>
             </View>
@@ -188,7 +187,7 @@ function VaultList({ onOpenSettings }: { onOpenSettings: () => void }) {
                         )}
 
             <Pressable style={styles.fab} onPress={handleCreate}>
-                <Text style={styles.fabText}>＋</Text>
+                <AppIcon name="mdi:plus" size={28} color="#fff" />
             </Pressable>
         </SafeAreaView>
     )

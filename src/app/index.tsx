@@ -14,6 +14,7 @@ import {
     View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { AppIcon } from '@/components/app-icon'
 import { notifyNotesChanged } from '@/data-layer'
 import { NoteCard } from '@/features/notes/components/note-card'
 import { useCreateNote, useNotes, useSearchNotes } from '@/features/notes/hooks'
@@ -58,14 +59,13 @@ const styles = StyleSheet.create({
     iconButton: {
         padding: 6,
     },
-    iconText: {
-        fontSize: 20,
-    },
     addButton: {
         backgroundColor: '#2f6fed',
         borderRadius: 20,
         paddingHorizontal: 14,
         paddingVertical: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     addButtonText: {
         color: '#fff',
@@ -212,7 +212,7 @@ export default function NotesListScreen() {
     }, [])
 
     const handleCreate = () => {
-    // 惰性新建：不立即落库，进入编辑页，首次输入内容保存时才创建
+        // 惰性新建：不立即落库，进入编辑页，首次输入内容保存时才创建
         router.push('/note/new')
     }
 
@@ -255,24 +255,25 @@ export default function NotesListScreen() {
                         hitSlop={8}
                         style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
                     >
-                        <Text style={styles.iconText}>#</Text>
+                        <AppIcon name="mdi:tag" size={20} color="#333" />
                     </Pressable>
                     <Pressable
                         onPress={() => router.push('/trash')}
                         hitSlop={8}
                         style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
                     >
-                        <Text style={styles.iconText}>🗑</Text>
+                        <AppIcon name="mdi:trash-can-outline" size={20} color="#333" />
                     </Pressable>
                     <Pressable
                         onPress={() => void handleImport()}
                         hitSlop={8}
                         style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
                     >
-                        <Text style={styles.iconText}>📥</Text>
+                        <AppIcon name="mdi:upload-outline" size={20} color="#333" />
                     </Pressable>
                     <Pressable onPress={handleCreate} style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}>
-                        <Text style={styles.addButtonText}>＋ 新建</Text>
+                        <AppIcon name="mdi:plus" size={16} color="#fff" />
+                        <Text style={styles.addButtonText}> 新建</Text>
                     </Pressable>
                 </View>
             </View>
@@ -293,45 +294,45 @@ export default function NotesListScreen() {
             <View style={styles.listArea}>
                 {isLoading
                     ? (
-                            <View style={styles.center}>
-                                <ActivityIndicator size="large" />
-                            </View>
-                        )
+                        <View style={styles.center}>
+                            <ActivityIndicator size="large" />
+                        </View>
+                    )
                     : isError
                         ? (
-                                <View style={styles.center}>
-                                    <Text style={styles.hint}>加载失败，请重试</Text>
-                                </View>
-                            )
+                            <View style={styles.center}>
+                                <Text style={styles.hint}>加载失败，请重试</Text>
+                            </View>
+                        )
                         : (
-                                <FlatList
-                                    data={notes}
-                                    keyExtractor={item => item.id}
-                                    renderItem={({ item }) => (
-                                        <NoteCard note={item} onPress={() => router.push(`/note/${item.id}`)} />
-                                    )}
-                                    contentContainerStyle={(notes?.length ?? 0) === 0 ? styles.emptyContainer : styles.listContent}
-                                    onScroll={handleScroll}
-                                    scrollEventThrottle={16}
-                                    ListEmptyComponent={(
-                                        <View style={styles.center}>
-                                            {searching
-                                                ? (
-                                                        <>
-                                                            <Text style={styles.emptyTitle}>无匹配结果</Text>
-                                                            <Text style={styles.hint}>换个关键词试试</Text>
-                                                        </>
-                                                    )
-                                                : (
-                                                        <>
-                                                            <Text style={styles.emptyTitle}>还没有笔记</Text>
-                                                            <Text style={styles.hint}>点击右上角「＋ 新建」开始记录</Text>
-                                                        </>
-                                                    )}
-                                        </View>
-                                    )}
-                                />
-                            )}
+                            <FlatList
+                                data={notes}
+                                keyExtractor={item => item.id}
+                                renderItem={({ item }) => (
+                                    <NoteCard note={item} onPress={() => router.push(`/note/${item.id}`)} />
+                                )}
+                                contentContainerStyle={(notes?.length ?? 0) === 0 ? styles.emptyContainer : styles.listContent}
+                                onScroll={handleScroll}
+                                scrollEventThrottle={16}
+                                ListEmptyComponent={(
+                                    <View style={styles.center}>
+                                        {searching
+                                            ? (
+                                                <>
+                                                    <Text style={styles.emptyTitle}>无匹配结果</Text>
+                                                    <Text style={styles.hint}>换个关键词试试</Text>
+                                                </>
+                                            )
+                                            : (
+                                                <>
+                                                    <Text style={styles.emptyTitle}>还没有笔记</Text>
+                                                    <Text style={styles.hint}>点击右上角「＋ 新建」开始记录</Text>
+                                                </>
+                                            )}
+                                    </View>
+                                )}
+                            />
+                        )}
             </View>
         </SafeAreaView>
     )

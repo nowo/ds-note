@@ -13,6 +13,7 @@ import {
     View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { AppIcon } from '@/components/app-icon'
 import {
     useCreateNote,
     useDeleteNote,
@@ -51,14 +52,6 @@ const styles = StyleSheet.create({
     toolbarActions: {
         flexDirection: 'row',
         alignItems: 'center',
-    },
-    toolbarText: {
-        fontSize: 20,
-        color: '#333',
-    },
-    deleteText: {
-        fontSize: 18,
-        color: '#c0392b',
     },
     saveStatus: {
         fontSize: 12,
@@ -106,6 +99,8 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         paddingHorizontal: 8,
         paddingVertical: 3,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     tagAddText: {
         fontSize: 12,
@@ -289,16 +284,16 @@ export default function NoteEditorScreen() {
             <View style={styles.toolbar}>
                 <View style={styles.toolbarLeft}>
                     <Pressable onPress={() => goBackOr('/')} hitSlop={8} style={styles.toolbarButton}>
-                        <Text style={styles.toolbarText}>←</Text>
+                        <AppIcon name="mdi:arrow-left" size={20} color="#333" />
                     </Pressable>
                     <Text style={styles.saveStatus}>{saveLabel}</Text>
                 </View>
                 <View style={styles.toolbarActions}>
                     <Pressable onPress={handleExport} hitSlop={8} style={styles.toolbarButton}>
-                        <Text style={styles.toolbarText}>📤</Text>
+                        <AppIcon name="mdi:export" size={20} color="#333" />
                     </Pressable>
                     <Pressable onPress={handleDelete} hitSlop={8} style={styles.toolbarButton}>
-                        <Text style={styles.deleteText}>🗑</Text>
+                        <AppIcon name="mdi:delete-outline" size={20} color="#c0392b" />
                     </Pressable>
                 </View>
             </View>
@@ -337,7 +332,8 @@ export default function NoteEditorScreen() {
                                 </View>
                             ))}
                         <Pressable style={styles.tagAddChip} onPress={() => setTagPickerVisible(true)}>
-                            <Text style={styles.tagAddText}>＋ 标签</Text>
+                            <AppIcon name="mdi:plus" size={14} color="#2f6fed" />
+                            <Text style={styles.tagAddText}> 标签</Text>
                         </Pressable>
                     </View>
                 )}

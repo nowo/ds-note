@@ -20,6 +20,7 @@ export default function RootLayout() {
                         <Stack.Screen name="trash" />
                         <Stack.Screen name="tags" />
                         <Stack.Screen name="tag/[id]" />
+                        <Stack.Screen name="settings" />
                     </Stack>
                 </VaultProvider>
             </MigrationsGate>

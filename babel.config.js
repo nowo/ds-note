@@ -15,6 +15,7 @@ export default function (api) {
                         'mdi:delete-outline',
                         'mdi:cog',
                         'mdi:check-circle',
+                        'mdi:update',
                         // 首页
                         'mdi:tag',
                         'mdi:trash-can-outline',

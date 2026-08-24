@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
     ActivityIndicator,
     Alert,
@@ -19,6 +19,7 @@ import { notifyNotesChanged } from '@/data-layer'
 import { NoteCard } from '@/features/notes/components/note-card'
 import { useCreateNote, useNotes, useSearchNotes } from '@/features/notes/hooks'
 import { pickTextFiles } from '@/features/transfer/transfer'
+import { checkForUpdate, openReleasePage } from '@/features/update/check'
 
 const styles = StyleSheet.create({
     safe: {
@@ -115,6 +116,30 @@ const styles = StyleSheet.create({
 export default function NotesListScreen() {
     const router = useRouter()
     const createNote = useCreateNote()
+
+    // 启动静默检查更新：仅首次挂载一次；失败静默跳过（GitHub 不可达/离线不打扰用户）
+    const silentCheckDoneRef = useRef(false)
+    useEffect(() => {
+        if (silentCheckDoneRef.current) return
+        silentCheckDoneRef.current = true
+        void (async () => {
+            const result = await checkForUpdate()
+            if (!result?.hasUpdate) return
+            Alert.alert(
+                '发现新版本',
+                `最新版本 ${result.latestVersion}，当前 ${result.currentVersion}。是否前往下载？`,
+                [
+                    { text: '稍后', style: 'cancel' },
+                    {
+                        text: '去下载',
+                        onPress: () => {
+                            void openReleasePage(result.releaseUrl)
+                        },
+                    },
+                ],
+            )
+        })()
+    }, [])
 
     // 搜索：输入防抖 300ms
     const [query, setQuery] = useState('')
@@ -263,6 +288,13 @@ export default function NotesListScreen() {
                         style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
                     >
                         <AppIcon name="mdi:trash-can-outline" size={20} color="#333" />
+                    </Pressable>
+                    <Pressable
+                        onPress={() => router.push('/settings')}
+                        hitSlop={8}
+                        style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+                    >
+                        <AppIcon name="mdi:cog" size={20} color="#333" />
                     </Pressable>
                     <Pressable
                         onPress={() => void handleImport()}

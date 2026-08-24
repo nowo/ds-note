@@ -1,3 +1,4 @@
+import type { ExportFormat } from '@/features/transfer/transfer'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
@@ -18,6 +19,7 @@ import {
     useNote,
     useUpdateNote,
 } from '@/features/notes/hooks'
+import { exportTextFile } from '@/features/transfer/transfer'
 import { formatDateTime } from '@/utils/time'
 
 const styles = StyleSheet.create({
@@ -37,6 +39,10 @@ const styles = StyleSheet.create({
     toolbarButton: {
         padding: 8,
         minWidth: 44,
+        alignItems: 'center',
+    },
+    toolbarActions: {
+        flexDirection: 'row',
         alignItems: 'center',
     },
     toolbarText: {
@@ -195,6 +201,23 @@ export default function NoteEditorScreen() {
         ])
     }
 
+    const doExport = async (format: ExportFormat) => {
+        const { title, content } = latestRef.current
+        try {
+            await exportTextFile(title, content, format)
+        } catch (e) {
+            Alert.alert('导出失败', String(e instanceof Error ? e.message : e))
+        }
+    }
+
+    const handleExport = () => {
+        Alert.alert('导出笔记', '选择导出格式：', [
+            { text: '取消', style: 'cancel' },
+            { text: 'Markdown (.md)', onPress: () => void doExport('md') },
+            { text: '纯文本 (.txt)', onPress: () => void doExport('txt') },
+        ])
+    }
+
     const needsLoading = !isNew && isLoading
 
     if (needsLoading) {
@@ -226,9 +249,14 @@ export default function NoteEditorScreen() {
                     <Text style={styles.toolbarText}>←</Text>
                 </Pressable>
                 <Text style={styles.saveStatus}>{saveLabel}</Text>
-                <Pressable onPress={handleDelete} hitSlop={8} style={styles.toolbarButton}>
-                    <Text style={styles.deleteText}>🗑</Text>
-                </Pressable>
+                <View style={styles.toolbarActions}>
+                    <Pressable onPress={handleExport} hitSlop={8} style={styles.toolbarButton}>
+                        <Text style={styles.toolbarText}>📤</Text>
+                    </Pressable>
+                    <Pressable onPress={handleDelete} hitSlop={8} style={styles.toolbarButton}>
+                        <Text style={styles.deleteText}>🗑</Text>
+                    </Pressable>
+                </View>
             </View>
 
             <KeyboardAvoidingView

@@ -2,6 +2,7 @@ import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useRef } from 'react'
 import {
     ActivityIndicator,
+    Alert,
     FlatList,
     Pressable,
     RefreshControl,
@@ -11,7 +12,8 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { NoteCard } from '@/features/notes/components/note-card'
-import { useNotes } from '@/features/notes/hooks'
+import { useCreateNote, useNotes } from '@/features/notes/hooks'
+import { pickTextFiles } from '@/features/transfer/transfer'
 import { useVault } from '@/features/vault/store'
 
 const styles = StyleSheet.create({
@@ -30,6 +32,17 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: '700',
         color: '#111',
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    iconButton: {
+        padding: 6,
+    },
+    iconText: {
+        fontSize: 20,
     },
     addButton: {
         backgroundColor: '#2f6fed',
@@ -74,6 +87,7 @@ export default function NotesListScreen() {
     const router = useRouter()
     const vault = useVault()
     const { data: notes, isLoading, isError } = useNotes()
+    const createNote = useCreateNote()
 
     // 回到主页时自动锁定加密区（"返回主页即重新锁定"）
     useFocusEffect(
@@ -99,13 +113,43 @@ export default function NotesListScreen() {
         router.push('/note/new')
     }
 
+    const handleImport = async () => {
+        try {
+            const { notes: imported, skipped } = await pickTextFiles()
+            if (imported.length === 0) {
+                if (skipped > 0) {
+                    Alert.alert('导入', `没有可导入的 .txt/.text/.md 文件（跳过了 ${skipped} 个）`)
+                }
+                return
+            }
+            for (const n of imported) {
+                await createNote.mutateAsync(n)
+            }
+            Alert.alert(
+                '导入完成',
+                `已导入 ${imported.length} 条笔记${skipped > 0 ? `，跳过 ${skipped} 个不支持的文件` : ''}`,
+            )
+        } catch (e) {
+            Alert.alert('导入失败', String(e instanceof Error ? e.message : e))
+        }
+    }
+
     return (
         <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>我的笔记</Text>
-                <Pressable onPress={handleCreate} style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}>
-                    <Text style={styles.addButtonText}>＋ 新建</Text>
-                </Pressable>
+                <View style={styles.headerActions}>
+                    <Pressable
+                        onPress={() => void handleImport()}
+                        hitSlop={8}
+                        style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+                    >
+                        <Text style={styles.iconText}>📥</Text>
+                    </Pressable>
+                    <Pressable onPress={handleCreate} style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}>
+                        <Text style={styles.addButtonText}>＋ 新建</Text>
+                    </Pressable>
+                </View>
             </View>
 
             {isLoading

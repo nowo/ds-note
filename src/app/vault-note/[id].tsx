@@ -1,3 +1,4 @@
+import type { ExportFormat } from '@/features/transfer/transfer'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
@@ -12,6 +13,7 @@ import {
     View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { exportTextFile } from '@/features/transfer/transfer'
 import {
     useCreateVaultNote,
     useDeleteVaultNote,
@@ -38,6 +40,10 @@ const styles = StyleSheet.create({
     toolbarButton: {
         padding: 8,
         minWidth: 44,
+        alignItems: 'center',
+    },
+    toolbarActions: {
+        flexDirection: 'row',
         alignItems: 'center',
     },
     toolbarText: {
@@ -193,6 +199,23 @@ export default function VaultNoteEditorScreen() {
         ])
     }
 
+    const doExport = async (format: ExportFormat) => {
+        const { title, content } = latestRef.current
+        try {
+            await exportTextFile(title, content, format)
+        } catch (e) {
+            Alert.alert('导出失败', String(e instanceof Error ? e.message : e))
+        }
+    }
+
+    const handleExport = () => {
+        Alert.alert('导出加密笔记', '导出内容为解密后的明文，选择格式：', [
+            { text: '取消', style: 'cancel' },
+            { text: 'Markdown (.md)', onPress: () => void doExport('md') },
+            { text: '纯文本 (.txt)', onPress: () => void doExport('txt') },
+        ])
+    }
+
     // 未解锁：提示先去解锁
     if (!vault.mk) {
         return (
@@ -234,9 +257,14 @@ export default function VaultNoteEditorScreen() {
                     <Text style={styles.toolbarText}>←</Text>
                 </Pressable>
                 <Text style={styles.saveStatus}>{saveLabel}</Text>
-                <Pressable onPress={handleDelete} hitSlop={8} style={styles.toolbarButton}>
-                    <Text style={styles.deleteText}>🗑</Text>
-                </Pressable>
+                <View style={styles.toolbarActions}>
+                    <Pressable onPress={handleExport} hitSlop={8} style={styles.toolbarButton}>
+                        <Text style={styles.toolbarText}>📤</Text>
+                    </Pressable>
+                    <Pressable onPress={handleDelete} hitSlop={8} style={styles.toolbarButton}>
+                        <Text style={styles.deleteText}>🗑</Text>
+                    </Pressable>
+                </View>
             </View>
 
             <KeyboardAvoidingView style={styles.editor} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

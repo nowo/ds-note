@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router'
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import {
     ActivityIndicator,
     Alert,
@@ -8,11 +8,12 @@ import {
     RefreshControl,
     StyleSheet,
     Text,
+    TextInput,
     View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { NoteCard } from '@/features/notes/components/note-card'
-import { useCreateNote, useNotes } from '@/features/notes/hooks'
+import { useCreateNote, useNotes, useSearchNotes } from '@/features/notes/hooks'
 import { pickTextFiles } from '@/features/transfer/transfer'
 import { useVault } from '@/features/vault/store'
 
@@ -37,6 +38,20 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
+    },
+    searchWrap: {
+        paddingHorizontal: 16,
+        paddingBottom: 8,
+    },
+    searchInput: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: '#ddd',
+        paddingHorizontal: 14,
+        paddingVertical: 9,
+        fontSize: 15,
+        color: '#111',
     },
     iconButton: {
         padding: 6,
@@ -86,8 +101,23 @@ const styles = StyleSheet.create({
 export default function NotesListScreen() {
     const router = useRouter()
     const vault = useVault()
-    const { data: notes, isLoading, isError } = useNotes()
     const createNote = useCreateNote()
+
+    // 搜索：输入防抖 300ms
+    const [query, setQuery] = useState('')
+    const [debouncedQuery, setDebouncedQuery] = useState('')
+    const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const onChangeQuery = (text: string) => {
+        setQuery(text)
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+        searchTimerRef.current = setTimeout(() => {
+            setDebouncedQuery(text.trim())
+        }, 300)
+    }
+    const searching = debouncedQuery.length > 0
+    const normal = useNotes()
+    const search = useSearchNotes(debouncedQuery)
+    const { data: notes, isLoading, isError } = searching ? search : normal
 
     // 回到主页时自动锁定加密区（"返回主页即重新锁定"）
     useFocusEffect(
@@ -140,6 +170,13 @@ export default function NotesListScreen() {
                 <Text style={styles.headerTitle}>我的笔记</Text>
                 <View style={styles.headerActions}>
                     <Pressable
+                        onPress={() => router.push('/trash')}
+                        hitSlop={8}
+                        style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+                    >
+                        <Text style={styles.iconText}>🗑</Text>
+                    </Pressable>
+                    <Pressable
                         onPress={() => void handleImport()}
                         hitSlop={8}
                         style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
@@ -150,6 +187,18 @@ export default function NotesListScreen() {
                         <Text style={styles.addButtonText}>＋ 新建</Text>
                     </Pressable>
                 </View>
+            </View>
+
+            <View style={styles.searchWrap}>
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="搜索笔记…"
+                    placeholderTextColor="#aaa"
+                    value={query}
+                    onChangeText={onChangeQuery}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                />
             </View>
 
             {isLoading
@@ -183,8 +232,19 @@ export default function NotesListScreen() {
                                 )}
                                 ListEmptyComponent={(
                                     <View style={styles.center}>
-                                        <Text style={styles.emptyTitle}>还没有笔记</Text>
-                                        <Text style={styles.hint}>点击右上角「＋ 新建」开始记录</Text>
+                                        {searching
+                                            ? (
+                                                    <>
+                                                        <Text style={styles.emptyTitle}>无匹配结果</Text>
+                                                        <Text style={styles.hint}>换个关键词试试</Text>
+                                                    </>
+                                                )
+                                            : (
+                                                    <>
+                                                        <Text style={styles.emptyTitle}>还没有笔记</Text>
+                                                        <Text style={styles.hint}>点击右上角「＋ 新建」开始记录</Text>
+                                                    </>
+                                                )}
                                     </View>
                                 )}
                             />

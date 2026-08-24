@@ -2,42 +2,15 @@ name: Build Android APK
 
 on:
   push:
-    branches: [main]
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  quality:
-    name: 检查（类型 + lint + 打包预检）
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-
-      - name: 类型检查
-        run: pnpm typecheck
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: 打包预检（expo export，无需原生 SDK）
-        run: npx expo export --platform android --no-bytecode --output-dir /tmp/export-check
-
   android-apk:
     name: 构建 Android APK（GitHub 云端 SDK，无需账号）
-    needs: quality
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -87,12 +60,12 @@ jobs:
       - name: 发布 Release（公开下载，无需登录 GitHub）
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.run_number }}
-          name: 我的笔记 APK # ${{ github.run_number }}
+          tag_name: ${{ github.ref_name }}
+          name: 我的笔记 ${{ github.ref_name }}
           body: |
             Android 安装包（debug 签名，可直接侧载安装）
+            - 版本：${{ github.ref_name }}
             - 提交：${{ github.sha }}
-            - 触发：${{ github.event_name }}
           files: android/app/build/outputs/apk/release/*.apk
 
       - name: 上传 APK Artifact（工作流内调试用）

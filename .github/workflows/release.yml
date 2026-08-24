@@ -1,0 +1,19 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: 自动发版（uppt：release PR + 打 tag）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # uppt：把 Conventional Commits 变成 draft release PR（版本号 + CHANGELOG），
+      # 人工合并该 PR 后自动打 tag（v1.2.0），tag 触发 Build 工作流构建 APK
+      - uses: danielroe/uppt@main

@@ -57,6 +57,7 @@ function createBus() {
 
 const notesBus = createBus()
 const vaultNotesBus = createBus()
+const tagsBus = createBus()
 
 export function notifyNotesChanged() {
     notesBus.notify()
@@ -64,6 +65,10 @@ export function notifyNotesChanged() {
 
 export function notifyVaultNotesChanged() {
     vaultNotesBus.notify()
+}
+
+export function notifyTagsChanged() {
+    tagsBus.notify()
 }
 
 /** 订阅版本号：bus.notify() 时 +1，作为数据拉取 effect 的依赖 */
@@ -79,4 +84,8 @@ export function useNotesVersion(): number {
 
 export function useVaultNotesVersion(): number {
     return useBusVersion(vaultNotesBus)
+}
+
+export function useTagsVersion(): number {
+    return useBusVersion(tagsBus)
 }

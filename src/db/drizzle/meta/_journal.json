@@ -15,6 +15,13 @@
             "when": 1787489293952,
             "tag": "0001_lush_vindicator",
             "breakpoints": true
+        },
+        {
+            "idx": 2,
+            "version": "6",
+            "when": 1787531083965,
+            "tag": "0002_strange_wrecker",
+            "breakpoints": true
         }
     ]
 }

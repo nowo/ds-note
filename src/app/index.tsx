@@ -170,6 +170,13 @@ export default function NotesListScreen() {
                 <Text style={styles.headerTitle}>我的笔记</Text>
                 <View style={styles.headerActions}>
                     <Pressable
+                        onPress={() => router.push('/tags')}
+                        hitSlop={8}
+                        style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+                    >
+                        <Text style={styles.iconText}>#</Text>
+                    </Pressable>
+                    <Pressable
                         onPress={() => router.push('/trash')}
                         hitSlop={8}
                         style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}

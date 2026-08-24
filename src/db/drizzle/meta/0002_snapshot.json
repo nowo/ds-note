@@ -1,0 +1,306 @@
+{
+    "version": "6",
+    "dialect": "sqlite",
+    "id": "591773e7-75e3-468f-aabf-dd5c305d0323",
+    "prevId": "c2af6857-7e1e-4813-82d0-e87ffc4e2819",
+    "tables": {
+        "note_tags": {
+            "name": "note_tags",
+            "columns": {
+                "note_id": {
+                    "name": "note_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "tag_id": {
+                    "name": "tag_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {
+                "idx_note_tags_tag_id": {
+                    "name": "idx_note_tags_tag_id",
+                    "columns": [
+                        "tag_id"
+                    ],
+                    "isUnique": false
+                },
+                "idx_note_tags_note_id": {
+                    "name": "idx_note_tags_note_id",
+                    "columns": [
+                        "note_id"
+                    ],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {
+                "note_tags_note_id_notes_id_fk": {
+                    "name": "note_tags_note_id_notes_id_fk",
+                    "tableFrom": "note_tags",
+                    "tableTo": "notes",
+                    "columnsFrom": [
+                        "note_id"
+                    ],
+                    "columnsTo": [
+                        "id"
+                    ],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                },
+                "note_tags_tag_id_tags_id_fk": {
+                    "name": "note_tags_tag_id_tags_id_fk",
+                    "tableFrom": "note_tags",
+                    "tableTo": "tags",
+                    "columnsFrom": [
+                        "tag_id"
+                    ],
+                    "columnsTo": [
+                        "id"
+                    ],
+                    "onDelete": "cascade",
+                    "onUpdate": "no action"
+                }
+            },
+            "compositePrimaryKeys": {
+                "note_tags_note_id_tag_id_pk": {
+                    "columns": [
+                        "note_id",
+                        "tag_id"
+                    ],
+                    "name": "note_tags_note_id_tag_id_pk"
+                }
+            },
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "notes": {
+            "name": "notes",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "title": {
+                    "name": "title",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "''"
+                },
+                "content": {
+                    "name": "content",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "''"
+                },
+                "pinned": {
+                    "name": "pinned",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "deleted_at": {
+                    "name": "deleted_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {
+                "idx_notes_updated_at": {
+                    "name": "idx_notes_updated_at",
+                    "columns": [
+                        "updated_at"
+                    ],
+                    "isUnique": false
+                },
+                "idx_notes_deleted_at": {
+                    "name": "idx_notes_deleted_at",
+                    "columns": [
+                        "deleted_at"
+                    ],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "tags": {
+            "name": "tags",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "name": {
+                    "name": "name",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {
+                "tags_name_unique": {
+                    "name": "tags_name_unique",
+                    "columns": [
+                        "name"
+                    ],
+                    "isUnique": true
+                },
+                "idx_tags_name": {
+                    "name": "idx_tags_name",
+                    "columns": [
+                        "name"
+                    ],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "vault_meta": {
+            "name": "vault_meta",
+            "columns": {
+                "key": {
+                    "name": "key",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "value": {
+                    "name": "value",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        },
+        "vault_notes": {
+            "name": "vault_notes",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "title_enc": {
+                    "name": "title_enc",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "content_enc": {
+                    "name": "content_enc",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "deleted_at": {
+                    "name": "deleted_at",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {
+                "idx_vault_notes_updated_at": {
+                    "name": "idx_vault_notes_updated_at",
+                    "columns": [
+                        "updated_at"
+                    ],
+                    "isUnique": false
+                },
+                "idx_vault_notes_deleted_at": {
+                    "name": "idx_vault_notes_deleted_at",
+                    "columns": [
+                        "deleted_at"
+                    ],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
+        }
+    },
+    "views": {},
+    "enums": {},
+    "_meta": {
+        "schemas": {},
+        "tables": {},
+        "columns": {}
+    },
+    "internal": {
+        "indexes": {}
+    }
+}

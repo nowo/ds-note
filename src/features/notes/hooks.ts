@@ -1,6 +1,6 @@
 import type { Db } from '@/db/db-provider'
 import type { NewNote } from '@/db/schema'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { notifyNotesChanged, useLoad, useNotesVersion } from '@/data-layer'
 import { useDbContext } from '@/db/db-provider'
 import {
@@ -50,7 +50,7 @@ export function useRestoreNote() {
             opts?.onSuccess?.()
         })
     }, [db])
-    return { mutate, mutateAsync: mutate }
+    return useMemo(() => ({ mutate, mutateAsync: mutate }), [mutate])
 }
 
 export function usePurgeNote() {
@@ -61,7 +61,7 @@ export function usePurgeNote() {
             opts?.onSuccess?.()
         })
     }, [db])
-    return { mutate, mutateAsync: mutate }
+    return useMemo(() => ({ mutate, mutateAsync: mutate }), [mutate])
 }
 
 export function useEmptyTrash() {
@@ -72,7 +72,7 @@ export function useEmptyTrash() {
             opts?.onSuccess?.()
         })
     }, [db])
-    return { mutate, mutateAsync: mutate }
+    return useMemo(() => ({ mutate, mutateAsync: mutate }), [mutate])
 }
 
 export function useNote(id: string) {
@@ -92,10 +92,7 @@ export function useCreateNote() {
         },
         [db],
     )
-    return {
-        mutate,
-        mutateAsync: mutate,
-    }
+    return useMemo(() => ({ mutate, mutateAsync: mutate }), [mutate])
 }
 
 export function useUpdateNote() {
@@ -109,10 +106,7 @@ export function useUpdateNote() {
         },
         [db],
     )
-    return {
-        mutate,
-        mutateAsync: mutate,
-    }
+    return useMemo(() => ({ mutate, mutateAsync: mutate }), [mutate])
 }
 
 export function useDeleteNote() {
@@ -126,8 +120,5 @@ export function useDeleteNote() {
         },
         [db],
     )
-    return {
-        mutate,
-        mutateAsync: mutate,
-    }
+    return useMemo(() => ({ mutate, mutateAsync: mutate }), [mutate])
 }

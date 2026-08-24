@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 /**
  * 普通笔记表（明文存储）。
@@ -59,3 +59,37 @@ export const vaultMeta = sqliteTable('vault_meta', {
 
 export type VaultNote = typeof vaultNotes.$inferSelect
 export type NewVaultNote = typeof vaultNotes.$inferInsert
+
+/** 标签表（仅普通笔记，加密区暂不支持） */
+export const tags = sqliteTable(
+    'tags',
+    {
+        id: text('id').primaryKey(),
+        name: text('name').notNull().unique(),
+        createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    },
+    t => [
+        index('idx_tags_name').on(t.name),
+    ],
+)
+
+/** 笔记-标签 多对多关联 */
+export const noteTags = sqliteTable(
+    'note_tags',
+    {
+        noteId: text('note_id')
+            .notNull()
+            .references(() => notes.id, { onDelete: 'cascade' }),
+        tagId: text('tag_id')
+            .notNull()
+            .references(() => tags.id, { onDelete: 'cascade' }),
+    },
+    t => [
+        primaryKey({ columns: [t.noteId, t.tagId] }),
+        index('idx_note_tags_tag_id').on(t.tagId),
+        index('idx_note_tags_note_id').on(t.noteId),
+    ],
+)
+
+export type Tag = typeof tags.$inferSelect
+export type NewTag = typeof tags.$inferInsert

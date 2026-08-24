@@ -19,6 +19,8 @@ import {
     useNote,
     useUpdateNote,
 } from '@/features/notes/hooks'
+import { TagPicker } from '@/features/tags/components/tag-picker'
+import { useNoteTagIds, useTags } from '@/features/tags/hooks'
 import { exportTextFile } from '@/features/transfer/transfer'
 import { formatDateTime } from '@/utils/time'
 
@@ -72,6 +74,38 @@ const styles = StyleSheet.create({
         color: '#aaa',
         marginBottom: 8,
     },
+    tagRow: {
+        // 普通 View 内容自适应：标签少时一行紧凑，多时换行，不会撑出多余高度
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+        marginBottom: 6,
+        alignItems: 'center',
+    },
+    tagChip: {
+        backgroundColor: '#eef3ff',
+        borderRadius: 10,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderWidth: 1,
+        borderColor: '#c9d6f2',
+    },
+    tagChipText: {
+        fontSize: 12,
+        color: '#2f6fed',
+    },
+    tagAddChip: {
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: '#bbb',
+        borderRadius: 10,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+    },
+    tagAddText: {
+        fontSize: 12,
+        color: '#888',
+    },
     contentInput: {
         flex: 1,
         fontSize: 16,
@@ -116,10 +150,13 @@ export default function NoteEditorScreen() {
     const create = useCreateNote()
     const update = useUpdateNote()
     const remove = useDeleteNote()
+    const { data: allTags } = useTags()
+    const { data: noteTagIds } = useNoteTagIds(isNew ? '__none__' : id)
 
     const [title, setTitle] = useState('')
     const [content, setContent] = useState('')
     const [saveState, setSaveState] = useState<SaveState>('saved')
+    const [tagPickerVisible, setTagPickerVisible] = useState(false)
     // 新建笔记首次保存后拿到真实 id；之后所有保存都更新这条
     const createdIdRef = useRef<string | null>(null)
 
@@ -283,6 +320,20 @@ export default function NoteEditorScreen() {
                         {formatDateTime(note.updatedAt)}
                     </Text>
                 )}
+                {!isNew && (
+                    <View style={styles.tagRow}>
+                        {(allTags ?? [])
+                            .filter(t => noteTagIds?.includes(t.id))
+                            .map(tag => (
+                                <View key={tag.id} style={styles.tagChip}>
+                                    <Text style={styles.tagChipText}>{tag.name}</Text>
+                                </View>
+                            ))}
+                        <Pressable style={styles.tagAddChip} onPress={() => setTagPickerVisible(true)}>
+                            <Text style={styles.tagAddText}>＋ 标签</Text>
+                        </Pressable>
+                    </View>
+                )}
                 <TextInput
                     style={styles.contentInput}
                     placeholder="开始输入内容…"
@@ -296,6 +347,14 @@ export default function NoteEditorScreen() {
                     textAlignVertical="top"
                 />
             </KeyboardAvoidingView>
+
+            {!isNew && (
+                <TagPicker
+                    visible={tagPickerVisible}
+                    noteId={id}
+                    onClose={() => setTagPickerVisible(false)}
+                />
+            )}
         </SafeAreaView>
     )
 }

@@ -1,5 +1,5 @@
 import type { NewVaultNote } from '@/db/schema'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { notifyVaultNotesChanged, useLoad, useVaultNotesVersion } from '@/data-layer'
 import { useDbContext } from '@/db/db-provider'
 import { useDb } from '@/features/notes/hooks'
@@ -72,7 +72,7 @@ export function useCreateVaultNote() {
         },
         [db, mk],
     )
-    return { mutate, mutateAsync: mutate }
+    return useMemo(() => ({ mutate, mutateAsync: mutate }), [mutate])
 }
 
 export function useUpdateVaultNote() {
@@ -91,7 +91,7 @@ export function useUpdateVaultNote() {
         },
         [db, mk],
     )
-    return { mutate, mutateAsync: mutate }
+    return useMemo(() => ({ mutate, mutateAsync: mutate }), [mutate])
 }
 
 export function useDeleteVaultNote() {
@@ -102,5 +102,5 @@ export function useDeleteVaultNote() {
             opts?.onSuccess?.()
         })
     }, [db])
-    return { mutate, mutateAsync: mutate }
+    return useMemo(() => ({ mutate, mutateAsync: mutate }), [mutate])
 }

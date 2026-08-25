@@ -3,17 +3,29 @@ name: Release
 on:
   push:
     branches: [main]
+  pull_request:
+    types: [closed]
+    branches: [main]
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  release:
-    name: 自动发版（uppt：release PR + 打 tag）
+  # uppt/pr：push 到 main 时扫描 Conventional Commits，创建/更新 draft release PR
+  #（版本号 bump + CHANGELOG），供人工 review 后合并
+  open-pr:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # uppt：把 Conventional Commits 变成 draft release PR（版本号 + CHANGELOG），
-      # 人工合并该 PR 后自动打 tag（v1.2.0），tag 触发 Build 工作流构建 APK
-      - uses: danielroe/uppt@main
+      - uses: danielroe/uppt/pr@main
+
+  # uppt/release：release PR 被合并（closed + head 分支 release/v*）时自动打 tag（v1.2.0），
+  # tag 触发 Build 工作流构建 APK
+  tag:
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: danielroe/uppt/release@main

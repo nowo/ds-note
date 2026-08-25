@@ -6,10 +6,14 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
+  # uppt/release 打 tag 后用 API dispatch 本工作流（API 打 tag 不触发 push 事件），
+  # ref 指向新 tag（如 v1.1.0），下面 build-apk job 直接构建发布
+  workflow_dispatch:
 
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 jobs:
   # uppt/pr：push 到 main 时扫描 Conventional Commits，创建/更新 draft release PR
@@ -22,10 +26,82 @@ jobs:
       - uses: danielroe/uppt/pr@main
 
   # uppt/release：release PR 被合并（closed + head 分支 release/v*）时自动打 tag（v1.2.0），
-  # tag 触发 Build 工作流构建 APK
+  # 随后 dispatch 本工作流（workflow_dispatch，ref=新 tag）触发 build-apk
   tag:
     if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: danielroe/uppt/release@main
+
+  # 被 uppt dispatch（或手动 dispatch）时：构建 APK + 发布 GitHub Release
+  build-apk:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      # NDK 缓存：reanimated/worklets 的原生编译需要 NDK（每次全新 runner 重下要 10-20 分钟）
+      - name: Cache NDK
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ANDROID_HOME }}/ndk
+          key: ndk-${{ runner.os }}-v1
+
+      # Gradle 缓存：依赖下载 + gradle 发行版
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-v1
+
+      - run: pnpm install --frozen-lockfile
+
+      # workflow_dispatch 的 ref 就是 tag（如 v1.1.0），注入 app.json version + versionCode
+      - name: 注入版本号（tag → app.json version + versionCode）
+        env:
+          VERSION_TAG: ${{ github.ref_name }}
+        run: node scripts/set-app-version.mjs
+
+      - name: 生成原生工程（expo prebuild）
+        run: npx expo prebuild --platform android --non-interactive
+
+      - name: 构建 Release APK（跳过 lint，提升内存）
+        env:
+          GRADLE_OPTS: -Xmx4g
+        run: cd android && ./gradlew assembleRelease -x lint -x lintVitalRelease -Dorg.gradle.jvmargs=-Xmx4096m --no-daemon
+
+      - name: 发布 Release（公开下载，无需登录 GitHub）
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: 我的笔记 ${{ github.ref_name }}
+          body: |
+            Android 安装包（debug 签名，可直接侧载安装）
+            - 版本：${{ github.ref_name }}
+            - 提交：${{ github.sha }}
+          files: android/app/build/outputs/apk/release/*.apk
+
+      - name: 上传 APK Artifact（工作流内调试用）
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsnote-apk
+          path: android/app/build/outputs/apk/release/*.apk

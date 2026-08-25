@@ -49,6 +49,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: 注入版本号（tag → app.json version + versionCode）
+        env:
+          VERSION_TAG: ${{ github.ref_name }}
+        run: node scripts/set-app-version.mjs
+
       - name: 生成原生工程（expo prebuild）
         run: npx expo prebuild --platform android --non-interactive
 

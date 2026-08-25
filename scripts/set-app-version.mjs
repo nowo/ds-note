@@ -6,7 +6,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { process } from 'node:process'
+import process from 'node:process'
 
 const tag = process.env.VERSION_TAG ?? ''
 const match = tag.match(/^v?(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/)

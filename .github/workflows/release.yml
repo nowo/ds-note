@@ -89,16 +89,38 @@ jobs:
           GRADLE_OPTS: -Xmx4g
         run: cd android && ./gradlew assembleRelease -x lint -x lintVitalRelease -Dorg.gradle.jvmargs=-Xmx4096m --no-daemon
 
+      # 幂等发布：tag 已有 release（uppt 或上次构建留下的）→ 只上传/覆盖 APK asset；
+      # 没有 release → 才创建。保证一个 tag 只有一个 release，重复运行不产生"两遍"
       - name: 发布 Release（公开下载，无需登录 GitHub）
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: 我的笔记 ${{ github.ref_name }}
-          body: |
-            Android 安装包（debug 签名，可直接侧载安装）
-            - 版本：${{ github.ref_name }}
-            - 提交：${{ github.sha }}
-          files: android/app/build/outputs/apk/release/*.apk
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          TAG="${{ github.ref_name }}"
+          SRC_APKS=(android/app/build/outputs/apk/release/*.apk)
+          if [ ! -e "${SRC_APKS[0]}" ]; then
+            echo "未找到 APK 产物" >&2
+            exit 1
+          fi
+          # 重命名为带版本号的文件名：ds-note-v1.1.1.apk
+          NAMED_APKS=()
+          for apk in "${SRC_APKS[@]}"; do
+            named="ds-note-$TAG.apk"
+            cp "$apk" "$named"
+            NAMED_APKS+=("$named")
+          done
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "release $TAG 已存在，仅上传 APK"
+            gh release upload "$TAG" "${NAMED_APKS[@]}" --clobber
+          else
+            echo "创建 release $TAG"
+            NOTES="Android 安装包（debug 签名，可直接侧载安装）
+            版本：$TAG
+            提交：${{ github.sha }}"
+            gh release create "$TAG" "${NAMED_APKS[@]}" \
+              --title "我的笔记 $TAG" \
+              --notes "$NOTES"
+          fi
 
       - name: 上传 APK Artifact（工作流内调试用）
         uses: actions/upload-artifact@v4

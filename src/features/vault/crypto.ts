@@ -18,9 +18,10 @@ export const NONCE_LEN = 12 // GCM 96-bit 推荐长度
 export const TAG_LEN = 16
 /**
  * PBKDF2 迭代次数：纯 JS 实现（Hermes 比 V8 慢 5-20 倍），
- * 100k 兼顾手机端响应速度；后续换 react-native-quick-crypto（原生 KDF）后可再提高。
+ * 50k 在手机端约 0.5-1.5s，兼顾安全与响应；
+ * 后续换 react-native-quick-crypto（原生 KDF）后可再提高。
  */
-export const DEFAULT_PBKDF2_ITERS = 100_000
+export const DEFAULT_PBKDF2_ITERS = 50_000
 
 // ---------- base64（不依赖全局 btoa/atob，兼容 Hermes） ----------
 
@@ -113,6 +114,7 @@ export async function derivePasswordKey(
     return pbkdf2Async(sha256, utf8ToBytes(password), salt, {
         c: iterations,
         dkLen: KEY_LEN,
-        asyncTick: 10,
+        // 时间片让出（每 tick ms 让出一次）：Hermes 上过小会让出次数过多放大总耗时
+        asyncTick: 50,
     })
 }

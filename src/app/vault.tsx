@@ -10,7 +10,6 @@ import { NormalNotesPicker } from '@/features/vault/components/normal-notes-pick
 import { SetupFlow } from '@/features/vault/components/setup-flow'
 import { UnlockScreen } from '@/features/vault/components/unlock-screen'
 import { VaultNoteCard } from '@/features/vault/components/vault-note-card'
-import { VaultSettings } from '@/features/vault/components/vault-settings'
 import { useVaultNotes } from '@/features/vault/hooks'
 import { useVault } from '@/features/vault/store'
 import { goBackOr } from '@/utils/navigation'
@@ -67,7 +66,6 @@ const styles = StyleSheet.create({
 
 export default function VaultScreen() {
     const vault = useVault()
-    const [settingsVisible, setSettingsVisible] = useState(false)
 
     if (vault.status === 'uninitialized') {
         return <SetupFlow />
@@ -78,18 +76,10 @@ export default function VaultScreen() {
     }
 
     // ----- 已解锁：加密笔记列表 -----
-    return (
-        <>
-            <VaultList onOpenSettings={() => setSettingsVisible(true)} />
-            <VaultSettings
-                visible={settingsVisible}
-                onClose={() => setSettingsVisible(false)}
-            />
-        </>
-    )
+    return <VaultList />
 }
 
-function VaultList({ onOpenSettings }: { onOpenSettings: () => void }) {
+function VaultList() {
     const router = useRouter()
     const vault = useVault()
     const { data: notes, isLoading, isError } = useVaultNotes()
@@ -110,7 +100,7 @@ function VaultList({ onOpenSettings }: { onOpenSettings: () => void }) {
     const menuItems: MoreMenuItem[] = [
         { key: 'import', label: '移入笔记', icon: 'mdi:import', onPress: () => setImportVisible(true) },
         { key: 'lock', label: '锁定', icon: 'mdi:lock-open-variant', onPress: handleLock },
-        { key: 'settings', label: '设置', icon: 'mdi:cog', onPress: onOpenSettings },
+        { key: 'settings', label: '设置', icon: 'mdi:cog', onPress: () => router.push('/vault-settings') },
     ]
 
     return (

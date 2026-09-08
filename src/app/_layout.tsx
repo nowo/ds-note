@@ -17,6 +17,7 @@ export default function RootLayout() {
                         <Stack.Screen name="note/[id]" />
                         <Stack.Screen name="vault" />
                         <Stack.Screen name="vault-note/[id]" />
+                        <Stack.Screen name="vault-settings" />
                         <Stack.Screen name="trash" />
                         <Stack.Screen name="tags" />
                         <Stack.Screen name="tag/[id]" />

@@ -135,6 +135,9 @@ export default function VaultNoteEditorScreen() {
     const latestRef = useRef({ title: '', content: '' })
     latestRef.current = { title, content }
 
+    // 已落库内容基线：保存前与当前编辑内容比对，无变化则跳过 update（避免纯查看也刷新 updatedAt）
+    const baseRef = useRef({ title: '', content: '' })
+
     const saveNow = useCallback(async () => {
         const { title, content } = latestRef.current
         if (isNew) {
@@ -147,6 +150,7 @@ export default function VaultNoteEditorScreen() {
                 try {
                     const created = await create.mutateAsync({ title, content })
                     createdIdRef.current = created.id
+                    baseRef.current = { title, content }
                     // 不换路由：只记录真实 id，编辑器内容原地保留，避免重挂载闪烁
                     setCreatedId(created.id)
                 } finally {
@@ -154,10 +158,16 @@ export default function VaultNoteEditorScreen() {
                 }
                 return
             }
+            // 已创建：内容未变则跳过（纯查看/已同步过不刷新时间）
+            if (baseRef.current.title === title && baseRef.current.content === content) return
             await update.mutateAsync({ id: createdIdRef.current, title, content })
+            baseRef.current = { title, content }
             return
         }
+        // 已有笔记：内容未变则跳过
+        if (baseRef.current.title === title && baseRef.current.content === content) return
         await update.mutateAsync({ id, title, content })
+        baseRef.current = { title, content }
     }, [isNew, create, update, id])
 
     const saveNowWithState = useCallback(async () => {
@@ -180,8 +190,10 @@ export default function VaultNoteEditorScreen() {
         }, AUTOSAVE_DELAY)
     }, [saveNowWithState])
 
+    // 已有笔记：数据加载后填充编辑器，并把基线设为加载内容（此后未改动则不触发保存）
     useEffect(() => {
         if (note) {
+            baseRef.current = { title: note.title, content: note.content }
             setTitle(note.title)
             setContent(note.content)
         }

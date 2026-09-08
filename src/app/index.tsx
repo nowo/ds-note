@@ -1,3 +1,4 @@
+import type { MoreMenuItem } from '@/components/more-menu'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
@@ -15,6 +16,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { AppIcon } from '@/components/app-icon'
+import { MoreMenu } from '@/components/more-menu'
 import { notifyNotesChanged } from '@/data-layer'
 import { NoteCard } from '@/features/notes/components/note-card'
 import { useCreateNote, useNotes, useSearchNotes } from '@/features/notes/hooks'
@@ -34,14 +36,12 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
     },
     headerTitle: {
-        fontSize: 22,
+        fontSize: 24,
         fontWeight: '700',
         color: '#111',
     },
-    headerActions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
+    moreButton: {
+        padding: 4,
     },
     searchWrap: {
         paddingHorizontal: 16,
@@ -56,22 +56,6 @@ const styles = StyleSheet.create({
         paddingVertical: 9,
         fontSize: 15,
         color: '#111',
-    },
-    iconButton: {
-        padding: 6,
-    },
-    addButton: {
-        backgroundColor: '#2f6fed',
-        borderRadius: 20,
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    addButtonText: {
-        color: '#fff',
-        fontSize: 14,
-        fontWeight: '600',
     },
     pressed: {
         opacity: 0.7,
@@ -116,6 +100,7 @@ const styles = StyleSheet.create({
 export default function NotesListScreen() {
     const router = useRouter()
     const createNote = useCreateNote()
+    const [moreVisible, setMoreVisible] = useState(false)
 
     // 启动静默检查更新：仅首次挂载一次；失败静默跳过（GitHub 不可达/离线不打扰用户）
     const silentCheckDoneRef = useRef(false)
@@ -262,6 +247,15 @@ export default function NotesListScreen() {
         }
     }
 
+    // 右上 ⋯ 菜单的直达入口（定义在 handleCreate/handleImport 之后，避免 use-before-define）
+    const menuItems: MoreMenuItem[] = [
+        { key: 'new', label: '新建笔记', icon: 'mdi:plus', onPress: handleCreate },
+        { key: 'tags', label: '标签', icon: 'mdi:tag', onPress: () => router.push('/tags') },
+        { key: 'trash', label: '回收站', icon: 'mdi:trash-can-outline', onPress: () => router.push('/trash') },
+        { key: 'import', label: '导入笔记', icon: 'mdi:upload-outline', onPress: () => void handleImport() },
+        { key: 'settings', label: '设置', icon: 'mdi:cog', onPress: () => router.push('/settings') },
+    ]
+
     return (
         <SafeAreaView style={styles.safe} edges={['top']} {...panResponder.panHandlers}>
             {/* 下拉转圈：固定在页面最顶部，跟随下拉距离下移 */}
@@ -274,40 +268,13 @@ export default function NotesListScreen() {
             )}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>我的笔记</Text>
-                <View style={styles.headerActions}>
-                    <Pressable
-                        onPress={() => router.push('/tags')}
-                        hitSlop={8}
-                        style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-                    >
-                        <AppIcon name="mdi:tag" size={20} color="#333" />
-                    </Pressable>
-                    <Pressable
-                        onPress={() => router.push('/trash')}
-                        hitSlop={8}
-                        style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-                    >
-                        <AppIcon name="mdi:trash-can-outline" size={20} color="#333" />
-                    </Pressable>
-                    <Pressable
-                        onPress={() => router.push('/settings')}
-                        hitSlop={8}
-                        style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-                    >
-                        <AppIcon name="mdi:cog" size={20} color="#333" />
-                    </Pressable>
-                    <Pressable
-                        onPress={() => void handleImport()}
-                        hitSlop={8}
-                        style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-                    >
-                        <AppIcon name="mdi:upload-outline" size={20} color="#333" />
-                    </Pressable>
-                    <Pressable onPress={handleCreate} style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}>
-                        <AppIcon name="mdi:plus" size={16} color="#fff" />
-                        <Text style={styles.addButtonText}> 新建</Text>
-                    </Pressable>
-                </View>
+                <Pressable
+                    onPress={() => setMoreVisible(true)}
+                    hitSlop={8}
+                    style={({ pressed }) => [styles.moreButton, pressed && styles.pressed]}
+                >
+                    <AppIcon name="mdi:dots-horizontal" size={24} color="#333" />
+                </Pressable>
             </View>
 
             <View style={styles.searchWrap}>
@@ -358,7 +325,7 @@ export default function NotesListScreen() {
                                                 : (
                                                         <>
                                                             <Text style={styles.emptyTitle}>还没有笔记</Text>
-                                                            <Text style={styles.hint}>点击右上角「＋ 新建」开始记录</Text>
+                                                            <Text style={styles.hint}>点击右上角 ⋯ 新建笔记</Text>
                                                         </>
                                                     )}
                                         </View>
@@ -366,6 +333,12 @@ export default function NotesListScreen() {
                                 />
                             )}
             </View>
+
+            <MoreMenu
+                visible={moreVisible}
+                items={menuItems}
+                onClose={() => setMoreVisible(false)}
+            />
         </SafeAreaView>
     )
 }

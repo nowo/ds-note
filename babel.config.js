@@ -16,6 +16,7 @@ export default function (api) {
                         'mdi:cog',
                         'mdi:check-circle',
                         'mdi:update',
+                        'mdi:dots-horizontal',
                         // 首页
                         'mdi:tag',
                         'mdi:trash-can-outline',

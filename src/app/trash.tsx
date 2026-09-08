@@ -1,5 +1,6 @@
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { AppHeader } from '@/components/app-header'
 import { AppIcon } from '@/components/app-icon'
 import {
     useEmptyTrash,
@@ -16,22 +17,6 @@ const styles = StyleSheet.create({
     safe: {
         flex: 1,
         backgroundColor: '#f6f7f9',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-    },
-    backButton: {
-        padding: 8,
-        minWidth: 44,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#111',
     },
     emptyButton: {
         padding: 8,
@@ -173,22 +158,22 @@ export default function TrashScreen() {
 
     return (
         <SafeAreaView style={styles.safe} edges={['top']}>
-            <View style={styles.header}>
-                <Pressable onPress={() => goBackOr('/')} hitSlop={8} style={styles.backButton}>
-                    <AppIcon name="mdi:arrow-left" size={20} color="#333" />
-                </Pressable>
-                <Text style={styles.headerTitle}>回收站</Text>
-                <Pressable
-                    onPress={handleEmpty}
-                    hitSlop={8}
-                    style={styles.emptyButton}
-                    disabled={(notes?.length ?? 0) === 0}
-                >
-                    <Text style={[(notes?.length ?? 0) === 0 ? styles.emptyDisabled : styles.emptyText]}>
-                        清空
-                    </Text>
-                </Pressable>
-            </View>
+            <AppHeader
+                onBack={() => goBackOr('/')}
+                title="回收站"
+                right={(
+                    <Pressable
+                        onPress={handleEmpty}
+                        hitSlop={8}
+                        style={styles.emptyButton}
+                        disabled={(notes?.length ?? 0) === 0}
+                    >
+                        <Text style={[(notes?.length ?? 0) === 0 ? styles.emptyDisabled : styles.emptyText]}>
+                            清空
+                        </Text>
+                    </Pressable>
+                )}
+            />
 
             {isLoading
                 ? (

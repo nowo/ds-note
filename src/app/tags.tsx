@@ -12,6 +12,7 @@ import {
     View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { AppHeader } from '@/components/app-header'
 import { AppIcon } from '@/components/app-icon'
 import { useCreateTag, useDeleteTag, useRenameTag, useTags } from '@/features/tags/hooks'
 import { goBackOr } from '@/utils/navigation'
@@ -20,25 +21,6 @@ const styles = StyleSheet.create({
     safe: {
         flex: 1,
         backgroundColor: '#f6f7f9',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-    },
-    backButton: {
-        padding: 8,
-        minWidth: 44,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#111',
-    },
-    headerRight: {
-        width: 44,
     },
     createRow: {
         flexDirection: 'row',
@@ -242,13 +224,7 @@ export default function TagsScreen() {
 
     return (
         <SafeAreaView style={styles.safe} edges={['top']}>
-            <View style={styles.header}>
-                <Pressable onPress={() => goBackOr('/')} hitSlop={8} style={styles.backButton}>
-                    <AppIcon name="mdi:arrow-left" size={20} color="#333" />
-                </Pressable>
-                <Text style={styles.headerTitle}>标签</Text>
-                <View style={styles.headerRight} />
-            </View>
+            <AppHeader onBack={() => goBackOr('/')} title="标签" />
 
             <View style={styles.createRow}>
                 <TextInput

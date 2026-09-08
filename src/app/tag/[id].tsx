@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { AppIcon } from '@/components/app-icon'
+import { AppHeader } from '@/components/app-header'
 import { NoteCard } from '@/features/notes/components/note-card'
 import { useNotesByTag, useTags } from '@/features/tags/hooks'
 import { goBackOr } from '@/utils/navigation'
@@ -10,27 +10,6 @@ const styles = StyleSheet.create({
     safe: {
         flex: 1,
         backgroundColor: '#f6f7f9',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-    },
-    backButton: {
-        padding: 8,
-        minWidth: 44,
-    },
-    headerTitle: {
-        flex: 1,
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#111',
-        textAlign: 'center',
-    },
-    headerRight: {
-        width: 44,
     },
     listContent: {
         paddingTop: 4,
@@ -66,17 +45,7 @@ export default function TagNotesScreen() {
 
     return (
         <SafeAreaView style={styles.safe} edges={['top']}>
-            <View style={styles.header}>
-                <Pressable onPress={() => goBackOr('/')} hitSlop={8} style={styles.backButton}>
-                    <AppIcon name="mdi:arrow-left" size={20} color="#333" />
-                </Pressable>
-                <Text style={styles.headerTitle} numberOfLines={1}>
-                    #
-                    {' '}
-                    {tagName}
-                </Text>
-                <View style={styles.headerRight} />
-            </View>
+            <AppHeader onBack={() => goBackOr('/')} title={`# ${tagName}`} />
 
             {isLoading
                 ? (

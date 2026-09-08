@@ -279,7 +279,7 @@ export default function VaultNoteEditorScreen() {
     }
 
     const saveLabel
-        = saveState === 'saving' ? '加密保存中…' : saveState === 'error' ? '保存失败' : '已加密保存'
+        = saveState === 'saving' ? '保存中…' : saveState === 'error' ? '保存失败' : '已保存'
 
     return (
         <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -324,8 +324,6 @@ export default function VaultNoteEditorScreen() {
                         {' '}
                         · 更新于
                         {formatDateTime(note.updatedAt)}
-                        {' '}
-                        · 内容以 AES-256-GCM 加密存储
                     </Text>
                 )}
                 <TextInput

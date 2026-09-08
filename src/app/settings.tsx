@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { AppHeader } from '@/components/app-header'
 import { AppIcon } from '@/components/app-icon'
 import { checkForUpdate, getCurrentVersion, openReleasePage } from '@/features/update/check'
 import { goBackOr } from '@/utils/navigation'
@@ -9,25 +10,6 @@ const styles = StyleSheet.create({
     safe: {
         flex: 1,
         backgroundColor: '#f6f7f9',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-    },
-    backButton: {
-        padding: 8,
-        minWidth: 44,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#111',
-    },
-    headerRight: {
-        width: 44,
     },
     section: {
         backgroundColor: '#fff',
@@ -118,13 +100,7 @@ export default function SettingsScreen() {
 
     return (
         <SafeAreaView style={styles.safe} edges={['top']}>
-            <View style={styles.header}>
-                <Pressable onPress={() => goBackOr('/')} hitSlop={8} style={styles.backButton}>
-                    <AppIcon name="mdi:arrow-left" size={20} color="#333" />
-                </Pressable>
-                <Text style={styles.headerTitle}>设置</Text>
-                <View style={styles.headerRight} />
-            </View>
+            <AppHeader onBack={() => goBackOr('/')} title="设置" />
 
             <View style={styles.section}>
                 <View style={styles.row}>

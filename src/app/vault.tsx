@@ -1,8 +1,11 @@
+import type { MoreMenuItem } from '@/components/more-menu'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { AppHeader } from '@/components/app-header'
 import { AppIcon } from '@/components/app-icon'
+import { MoreMenu } from '@/components/more-menu'
 import { NormalNotesPicker } from '@/features/vault/components/normal-notes-picker'
 import { SetupFlow } from '@/features/vault/components/setup-flow'
 import { UnlockScreen } from '@/features/vault/components/unlock-screen'
@@ -17,30 +20,9 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f6f7f9',
     },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#111',
-    },
-    headerTitleWrap: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    headerActions: {
-        flexDirection: 'row',
-        gap: 4,
-    },
-    iconButton: {
-        padding: 8,
-        minWidth: 40,
-        alignItems: 'center',
+    headerLock: {
+        marginLeft: 4,
+        opacity: 0.55,
     },
     listContent: {
         paddingTop: 4,
@@ -112,6 +94,7 @@ function VaultList({ onOpenSettings }: { onOpenSettings: () => void }) {
     const vault = useVault()
     const { data: notes, isLoading, isError } = useVaultNotes()
     const [importVisible, setImportVisible] = useState(false)
+    const [moreVisible, setMoreVisible] = useState(false)
     const handleCreate = () => {
     // 惰性新建：进入编辑页，首次输入内容保存时才加密落库
         router.push('/vault-note/new')
@@ -124,28 +107,23 @@ function VaultList({ onOpenSettings }: { onOpenSettings: () => void }) {
         vault.lock()
     }
 
+    const menuItems: MoreMenuItem[] = [
+        { key: 'import', label: '移入笔记', icon: 'mdi:import', onPress: () => setImportVisible(true) },
+        { key: 'lock', label: '锁定', icon: 'mdi:lock-open-variant', onPress: handleLock },
+        { key: 'settings', label: '设置', icon: 'mdi:cog', onPress: onOpenSettings },
+    ]
+
     return (
         <SafeAreaView style={styles.safe} edges={['top']}>
-            <View style={styles.header}>
-                <Pressable onPress={() => goBackOr('/')} hitSlop={8} style={styles.iconButton}>
-                    <AppIcon name="mdi:arrow-left" size={20} color="#333" />
-                </Pressable>
-                <View style={styles.headerTitleWrap}>
-                    <AppIcon name="mdi:lock" size={18} color="#111" />
-                    <Text style={styles.headerTitle}> 加密笔记</Text>
-                </View>
-                <View style={styles.headerActions}>
-                    <Pressable onPress={() => setImportVisible(true)} hitSlop={8} style={styles.iconButton}>
-                        <AppIcon name="mdi:import" size={20} color="#333" />
+            <AppHeader
+                onBack={() => goBackOr('/')}
+                backExtra={<AppIcon name="mdi:lock" size={16} color="#111" style={styles.headerLock} />}
+                right={(
+                    <Pressable onPress={() => setMoreVisible(true)} hitSlop={8} style={{ padding: 4 }}>
+                        <AppIcon name="mdi:dots-horizontal" size={24} color="#333" />
                     </Pressable>
-                    <Pressable onPress={handleLock} hitSlop={8} style={styles.iconButton}>
-                        <AppIcon name="mdi:lock-open-variant" size={20} color="#333" />
-                    </Pressable>
-                    <Pressable onPress={onOpenSettings} hitSlop={8} style={styles.iconButton}>
-                        <AppIcon name="mdi:cog" size={20} color="#333" />
-                    </Pressable>
-                </View>
-            </View>
+                )}
+            />
 
             <NormalNotesPicker
                 visible={importVisible}
@@ -179,8 +157,8 @@ function VaultList({ onOpenSettings }: { onOpenSettings: () => void }) {
                                 contentContainerStyle={(notes?.length ?? 0) === 0 ? styles.emptyContainer : styles.listContent}
                                 ListEmptyComponent={(
                                     <View style={styles.center}>
-                                        <Text style={styles.emptyTitle}>加密区还是空的</Text>
-                                        <Text style={styles.hint}>点右上角「＋」新建加密笔记</Text>
+                                        <Text style={styles.emptyTitle}>这里还没有笔记</Text>
+                                        <Text style={styles.hint}>点右下角 ＋ 新建</Text>
                                     </View>
                                 )}
                             />
@@ -189,6 +167,12 @@ function VaultList({ onOpenSettings }: { onOpenSettings: () => void }) {
             <Pressable style={styles.fab} onPress={handleCreate}>
                 <AppIcon name="mdi:plus" size={28} color="#fff" />
             </Pressable>
+
+            <MoreMenu
+                visible={moreVisible}
+                items={menuItems}
+                onClose={() => setMoreVisible(false)}
+            />
         </SafeAreaView>
     )
 }

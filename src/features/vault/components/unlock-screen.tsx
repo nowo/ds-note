@@ -25,20 +25,17 @@ const styles = StyleSheet.create({
         gap: 12,
         backgroundColor: '#f6f7f9',
     },
-    title: {
-        fontSize: 22,
-        fontWeight: '700',
-        color: '#111',
-    },
     titleWrap: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 24,
+        justifyContent: 'center',
+        marginTop: 56,
     },
     subtitle: {
         fontSize: 14,
         color: '#666',
         marginBottom: 8,
+        textAlign: 'center',
     },
     primaryButton: {
         backgroundColor: '#2f6fed',
@@ -205,14 +202,14 @@ export function UnlockScreen() {
 
     return (
         <View style={styles.container}>
+            {/* 低调标识：不放"加密区"字样，仅一枚小锁图标，避免暴露区域性质 */}
             <View style={styles.titleWrap}>
-                <AppIcon name="mdi:lock" size={22} color="#111" />
-                <Text style={styles.title}> 加密区</Text>
+                <AppIcon name="mdi:lock-outline" size={26} color="#777" />
             </View>
             <Text style={styles.subtitle}>
                 {vault.mode === 'device'
-                    ? '请通过系统验证（指纹 / 面容 / 锁屏密码）解锁'
-                    : '请输入密码，或使用指纹 / 面容解锁'}
+                    ? '请通过系统验证（指纹 / 面容 / 锁屏密码）继续'
+                    : '请输入密码，或使用指纹 / 面容继续'}
             </Text>
 
             {vault.error && <Text style={styles.error}>{vault.error}</Text>}
